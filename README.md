@@ -2,8 +2,6 @@
 
 UK citizen transparency platform. Free council-level government data dashboards.
 
-Inspired by [forthepeople.in](https://forthepeople.in/en)
-
 ## Links
 
 - [GitHub](https://github.com/Pawansingh3889/forthepeople-uk)
