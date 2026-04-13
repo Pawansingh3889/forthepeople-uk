@@ -8,7 +8,9 @@ Usage:
 """
 import streamlit as st
 import requests
-from data import councils, get_weather, get_council_data, get_mp_data, get_schemes, get_housing, get_schools, get_crime_stats, get_health_data, get_transport, get_environment
+from data import (councils, get_weather, get_council_data, get_mp_data, get_schemes,
+                   get_housing, get_schools, get_crime_stats, get_health_data, get_transport,
+                   get_environment, get_essential_services, get_jobs_data)
 
 st.set_page_config(
     page_title="ForThePeople UK",
@@ -232,16 +234,62 @@ with tabs[9]:
 # ── TAB: Schemes ──
 with tabs[10]:
     st.markdown('<div class="section-header">Government Schemes & Benefits</div>', unsafe_allow_html=True)
+    st.markdown("[Check all benefits you're entitled to](https://www.gov.uk/check-benefits-financial-support)")
+
     schemes = get_schemes()
-    for s in schemes:
+    category_colors = {"Income": "#3b82f6", "Disability": "#8b5cf6", "Housing": "#f59e0b",
+                      "Family": "#ec4899", "Pension": "#64748b", "Energy": "#22c55e",
+                      "Tax": "#06b6d4", "Transport": "#f97316", "Education": "#14b8a6",
+                      "Immigration": "#6366f1", "Business": "#ef4444", "Legal": "#a855f7"}
+
+    category_filter = st.selectbox("Filter by category", ["All"] + list(schemes.keys()))
+
+    categories = [category_filter] if category_filter != "All" else list(schemes.keys())
+    for cat in categories:
+        cat_display = cat.replace("_", " ").title()
+        st.markdown(f"#### {cat_display}")
+        for s in schemes[cat]:
+            color = category_colors.get(s.get("category", ""), "#64748b")
+            st.markdown(f"""
+            <div class="scheme-card">
+                <a href="{s['link']}" target="_blank" style="font-weight: 700; font-size: 1.05rem;">{s['name']}</a>
+                <span style="background: {color}22; color: {color}; border: 1px solid {color}44; border-radius: 20px; padding: 2px 10px; font-size: 11px; margin-left: 8px;">{s.get('category', '')}</span>
+                <p style="color: #94a3b8; font-size: 0.85rem; margin: 4px 0;">{s['who']}</p>
+                <p style="color: #22c55e; font-weight: 600;">GBP {s['amount']}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # Essential Services
+    st.markdown('<div class="section-header">Essential Services & Helplines</div>', unsafe_allow_html=True)
+    services = get_essential_services()
+
+    st.markdown("##### Emergency Numbers")
+    for s in services["emergency"]:
         st.markdown(f"""
-        <div class="scheme-card">
-            <a href="{s['link']}" target="_blank" style="font-weight: 700; font-size: 1.05rem;">{s['name']}</a>
-            <p style="color: #94a3b8; font-size: 0.85rem; margin: 4px 0;">{s['who']}</p>
-            <p style="color: #22c55e; font-weight: 600;">GBP {s['amount']}</p>
+        <div class="alert-card">
+            <span style="color: #f87171; font-weight: 700; font-size: 1.1rem;">{s['number']}</span>
+            <span style="color: white; margin-left: 12px; font-weight: 600;">{s['name']}</span>
+            <p style="color: #94a3b8; margin: 4px 0 0 0;">{s['for']}</p>
         </div>
         """, unsafe_allow_html=True)
-    st.markdown("[Check all benefits you're entitled to](https://www.gov.uk/check-benefits-financial-support)")
+
+    st.markdown("##### Government Services")
+    for s in services["government"]:
+        st.markdown(f"""
+        <div class="data-card">
+            <a href="{s['url']}" target="_blank"><h4>{s['name']}</h4></a>
+            <p>{s['for']}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("##### NHS Services")
+    for s in services["nhs"]:
+        st.markdown(f"""
+        <div class="data-card">
+            <a href="{s['url']}" target="_blank"><h4>{s['name']}</h4></a>
+            <p>{s['for']}</p>
+        </div>
+        """, unsafe_allow_html=True)
 
 # ── TAB: Elections ──
 with tabs[11]:
@@ -261,15 +309,30 @@ with tabs[11]:
 # ── TAB: Jobs ──
 with tabs[12]:
     st.markdown('<div class="section-header">Jobs & Opportunities</div>', unsafe_allow_html=True)
-    st.markdown(f"""
-    **Job Sites for {council}:**
-    - [Indeed — {council}](https://uk.indeed.com/jobs?l={council.replace(' ', '+')})
-    - [Reed — {council}](https://www.reed.co.uk/jobs/{council.lower().replace(' ', '-')})
-    - [Civil Service Jobs](https://www.civilservicejobs.service.gov.uk)
-    - [NHS Jobs](https://www.jobs.nhs.uk)
-    - [Find an Apprenticeship](https://www.findapprenticeship.service.gov.uk)
-    - [Universal Jobmatch](https://www.gov.uk/find-a-job)
-    """)
+    jobs = get_jobs_data()
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.markdown("##### Job Sites")
+        for j in jobs["job_sites"]:
+            st.markdown(f"""
+            <div class="data-card">
+                <a href="{j['url']}" target="_blank"><h4>{j['name']}</h4></a>
+                <p>{j['for']}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("##### Career Support")
+        for j in jobs["career_support"]:
+            st.markdown(f"""
+            <div class="scheme-card">
+                <a href="{j['url']}" target="_blank" style="font-weight: 700;">{j['name']}</a>
+                <p style="color: #94a3b8; margin: 4px 0 0 0;">{j['for']}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+    st.markdown(f"[Search Indeed for {council} jobs](https://uk.indeed.com/jobs?l={council.replace(' ', '+')})")
 
 # ── Footer ──
 st.markdown("""
