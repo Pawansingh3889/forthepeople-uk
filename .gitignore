@@ -3,7 +3,3 @@ __pycache__/
 .streamlit/
 venv/
 .env
-.claude/
-.cursorrules
-.continue/
-.aider*
