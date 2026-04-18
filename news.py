@@ -92,7 +92,13 @@ def _parse_atom(xml_bytes: bytes, source: str) -> list[NewsItem]:
         link_el = entry.find("atom:link", _ATOM_NS)
         if link_el is not None:
             link = (link_el.get("href") or "").strip()
-        pub_el = entry.find("atom:updated", _ATOM_NS) or entry.find("atom:published", _ATOM_NS)
+        # Explicit None check — ElementTree truthiness is child-count-based
+        # and emits a DeprecationWarning in recent Python. An ``<updated>``
+        # element with text but no children falls through silently on
+        # ``a or b``, so we resolve it ourselves.
+        pub_el = entry.find("atom:updated", _ATOM_NS)
+        if pub_el is None:
+            pub_el = entry.find("atom:published", _ATOM_NS)
         pub = (pub_el.text or "").strip() if pub_el is not None else ""
         if title and link:
             items.append(NewsItem(title=title, link=link, published=pub, source=source))
