@@ -137,7 +137,10 @@ class TestGetBBC:
     def test_network_failure_returns_empty(self) -> None:
         import urllib.error
         with mock.patch("news.urllib.request.urlopen", side_effect=urllib.error.URLError("dns")):
-            assert get_bbc_uk(limit=5) in ([], None) or get_bbc_uk(limit=5) == []
+            # With the conftest autouse fixture clearing the cache between
+            # tests, this is deterministic: the URLError triggers the except
+            # branch, the function returns [].
+            assert get_bbc_uk(limit=5) == []
 
     def test_respects_limit(self) -> None:
         # Build a fixture with 20 items so we can see limit do its job.
