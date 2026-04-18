@@ -7,7 +7,6 @@ Usage:
     streamlit run app.py
 """
 import streamlit as st
-import requests
 from data import (councils, get_weather, get_council_data, get_mp_data, get_schemes,
                    get_housing, get_schools, get_crime_stats, get_health_data, get_transport,
                    get_environment, get_essential_services, get_jobs_data)
@@ -148,7 +147,7 @@ with tabs[2]:
     p2.metric("Median Age", data.get("median_age", "39"))
     p3.metric("Life Expectancy (M)", f"{data.get('life_exp_m', 78.7)}")
     p4.metric("Life Expectancy (F)", f"{data.get('life_exp_f', 82.4)}")
-    st.caption(f"Source: ONS Mid-Year Population Estimates")
+    st.caption("Source: ONS Mid-Year Population Estimates")
 
 # ── TAB: Finance ──
 with tabs[3]:
@@ -162,7 +161,7 @@ with tabs[3]:
         for area, pct in data["spending"].items():
             st.progress(int(pct.replace('%', '')) / 100, text=f"{area.replace('_', ' ').title()}: {pct}")
 
-    st.markdown(f"[View full accounts on gov.uk](https://www.gov.uk/government/collections/local-authority-revenue-expenditure-and-financing)")
+    st.markdown("[View full accounts on gov.uk](https://www.gov.uk/government/collections/local-authority-revenue-expenditure-and-financing)")
 
 # ── TAB: Housing ──
 with tabs[4]:
@@ -173,7 +172,7 @@ with tabs[4]:
     h2.metric("vs UK Average", f"{housing['vs_uk']:+,}")
     h3.metric("Waiting List", f"{housing.get('waiting_list', 'N/A'):,}" if isinstance(housing.get('waiting_list'), int) else housing.get('waiting_list', 'N/A'))
 
-    st.markdown(f"""
+    st.markdown("""
     **Schemes Available:**
     - [Right to Buy](https://www.gov.uk/right-to-buy-buying-your-council-home) — up to GBP 102,400 discount for council tenants
     - [Shared Ownership](https://www.gov.uk/shared-ownership-scheme) — buy 25-75% of a home
@@ -199,7 +198,7 @@ with tabs[6]:
     h1.metric("GP Surgeries", health['gp_surgeries'])
     h2.metric("Hospitals", health['hospitals'])
     h3.metric("A&E Wait (avg)", health['ae_wait'])
-    st.markdown(f"[Find local NHS services](https://www.nhs.uk/service-search)")
+    st.markdown("[Find local NHS services](https://www.nhs.uk/service-search)")
 
 # ── TAB: Crime ──
 with tabs[7]:
@@ -210,7 +209,7 @@ with tabs[7]:
     cr2.metric("Anti-Social", f"{crime['antisocial']:,}")
     cr3.metric("Violent Crime", f"{crime['violent']:,}")
     cr4.metric("Burglary", f"{crime['burglary']:,}")
-    st.markdown(f"[View full data on Police UK](https://www.police.uk)")
+    st.markdown("[View full data on Police UK](https://www.police.uk)")
 
 # ── TAB: Transport ──
 with tabs[8]:
@@ -219,7 +218,7 @@ with tabs[8]:
     st.markdown(f"**Nearest Train Station:** {transport['station']}")
     st.markdown(f"**Bus Provider:** {transport['bus']}")
     st.markdown(f"**Average Commute:** {transport['avg_commute']}")
-    st.markdown(f"[Plan your journey](https://www.thetrainline.com)")
+    st.markdown("[Plan your journey](https://www.thetrainline.com)")
 
 # ── TAB: Environment ──
 with tabs[9]:
@@ -229,7 +228,7 @@ with tabs[9]:
     e1.metric("Recycling Rate", env['recycling_rate'])
     e2.metric("Air Quality Index", env['aqi'])
     e3.metric("Green Spaces", env['green_spaces'])
-    st.markdown(f"[Check air quality](https://uk-air.defra.gov.uk/)")
+    st.markdown("[Check air quality](https://uk-air.defra.gov.uk/)")
 
 # ── TAB: Schemes ──
 with tabs[10]:
