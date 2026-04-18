@@ -26,11 +26,21 @@ content on the dashboard inherits those licences:
 - Met Office MIDAS / Open Data — Open Government Licence v3.0
 - Open-Meteo — Attribution 4.0 International (CC BY 4.0)
   <https://creativecommons.org/licenses/by/4.0/>
+- postcodes.io — Open Government Licence v3.0 (wraps ONS ONSPD data)
+  <https://postcodes.io/>
+- gov.uk announcements (Atom feed) — Open Government Licence v3.0
+  <https://www.gov.uk/government/announcements.atom>
+- BBC News UK (RSS feed, headlines + links only) — BBC rights, used
+  under standard RSS aggregation practice with link-back attribution.
+  <http://feeds.bbci.co.uk/news/uk/rss.xml> |
+  <https://www.bbc.co.uk/usingthebbc/terms/>
 
 Under OGL v3.0 and CC BY 4.0, attribution to the upstream source is
-required on any redistribution of the derived data. The dashboard
-attributes every metric to its source inline; contributors must
-preserve those attributions.
+required on any redistribution of the derived data. BBC headlines
+are displayed as-is with a direct link to the source article, per
+standard RSS aggregation practice. The dashboard attributes every
+metric to its source inline; contributors must preserve those
+attributions.
 
 Analysis code, caching, validation, and the Streamlit UI are
 separately licensed under Apache 2.0 (see LICENSE).
