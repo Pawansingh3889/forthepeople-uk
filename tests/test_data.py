@@ -55,21 +55,35 @@ class TestWeather:
 
 
 class TestSchemes:
-    def test_schemes_returns_list(self) -> None:
+    def test_schemes_returns_dict_of_categories(self) -> None:
+        # Contract: ``get_schemes`` returns a dict keyed by category
+        # (``business``, ``housing``, ``energy``, etc.), each value being
+        # a list of scheme dicts.
         result = get_schemes()
-        assert isinstance(result, list)
+        assert isinstance(result, dict)
         assert len(result) > 0
+        for category, schemes in result.items():
+            assert isinstance(category, str)
+            assert isinstance(schemes, list)
 
     def test_each_scheme_has_name(self) -> None:
-        for scheme in get_schemes():
-            assert "name" in scheme
+        for schemes in get_schemes().values():
+            for scheme in schemes:
+                assert isinstance(scheme, dict), f"expected dict, got {type(scheme)}"
+                assert "name" in scheme, f"scheme missing 'name' key: {scheme}"
 
 
 class TestEssentialServices:
-    def test_returns_list(self) -> None:
+    def test_returns_dict_of_categories(self) -> None:
+        # Contract: ``get_essential_services`` returns a dict keyed by
+        # category (``emergency``, ``health``, ``social``, etc.), each
+        # value being a list of service dicts.
         result = get_essential_services()
-        assert isinstance(result, list)
+        assert isinstance(result, dict)
         assert len(result) > 0
+        for category, services in result.items():
+            assert isinstance(category, str)
+            assert isinstance(services, list)
 
 
 class TestValidators:
