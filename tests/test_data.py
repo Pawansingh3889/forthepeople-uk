@@ -5,6 +5,8 @@ Falls back gracefully on network failures.
 """
 from __future__ import annotations
 
+from unittest import mock
+
 from data import (
     UK_ALL,
     COORDS,
@@ -107,6 +109,67 @@ class TestValidators:
     def test_crime_negative_count(self) -> None:
         v = validate_crime({"total": -5})
         assert not v.valid
+
+
+class TestGetWeatherSunriseRegression:
+    """Regression for the ``[""][7]`` typo in the sunrise/sunset defaults.
+
+    ``dict.get("key", default)`` evaluates ``default`` eagerly, so a
+    literal ``[""][7]`` raises IndexError at call time even when the
+    ``.get`` key is present. Open-Meteo started returning ``sunrise`` /
+    ``sunset`` in daily payloads, which made the ``if daily.get("sunrise")``
+    branch live and the typo started blowing up every weather fetch.
+
+    The fix uses ``[""] * 7`` (a 7-element list) as the default. These
+    tests assert ``get_weather`` never raises IndexError regardless of
+    whether the API payload includes sunrise/sunset.
+    """
+
+    def _mocked_requests(self, daily_extra: dict) -> mock.MagicMock:
+        """Return a requests.get-compatible mock returning a realistic payload."""
+        seven_dates = [f"2026-04-{18+i:02d}" for i in range(7)]
+        payload = {
+            "current": {
+                "temperature_2m": 12.0,
+                "apparent_temperature": 11.0,
+                "relative_humidity_2m": 70,
+                "wind_speed_10m": 10,
+                "weather_code": 2,
+            },
+            "daily": {
+                "time": seven_dates,
+                "temperature_2m_max": [14.0] * 7,
+                "temperature_2m_min": [8.0] * 7,
+                "precipitation_sum": [0.0] * 7,
+                "weather_code": [2] * 7,
+                **daily_extra,
+            },
+        }
+        m = mock.MagicMock()
+        m.json.return_value = payload
+        return m
+
+    def test_weather_ok_without_sunrise_field(self) -> None:
+        from data import get_weather as gw
+        with mock.patch("data.requests.get", return_value=self._mocked_requests({})):
+            result = gw("TestTownNoSunrise")
+        assert "error" not in result, f"get_weather raised: {result.get('error')}"
+        assert len(result["forecast"]) == 7
+        assert all(f["sunrise"] == "" for f in result["forecast"])
+
+    def test_weather_ok_with_sunrise_field(self) -> None:
+        from data import get_weather as gw
+        seven_sunrises = [f"2026-04-{18+i:02d}T05:30:00" for i in range(7)]
+        seven_sunsets = [f"2026-04-{18+i:02d}T20:15:00" for i in range(7)]
+        with mock.patch(
+            "data.requests.get",
+            return_value=self._mocked_requests({"sunrise": seven_sunrises, "sunset": seven_sunsets}),
+        ):
+            result = gw("TestTownWithSunrise")
+        assert "error" not in result, f"get_weather raised: {result.get('error')}"
+        assert len(result["forecast"]) == 7
+        assert result["forecast"][0]["sunrise"] == "05:30"
+        assert result["forecast"][0]["sunset"] == "20:15"
 
 
 class TestWholeUK:
