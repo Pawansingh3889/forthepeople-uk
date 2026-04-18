@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+# Opt JavaScript actions into Node.js 24 ahead of the Sep 2026 mandatory
+# cutover (same pattern applied on the OpsMind workflow).
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -15,7 +20,9 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install ruff
-      - run: ruff check app.py data.py cache.py validators.py
+      # Include the new postcode + news modules in the lint surface so a
+      # future rule change lands in CI too, not just locally.
+      - run: ruff check app.py data.py cache.py validators.py postcode.py news.py
       - name: Type check (ty)
         run: |
           pip install ty
