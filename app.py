@@ -10,6 +10,7 @@ import streamlit as st
 from data import (UK_ALL, councils, get_weather, get_council_data, get_mp_data, get_schemes,
                    get_housing, get_schools, get_crime_stats, get_health_data, get_transport,
                    get_environment, get_essential_services, get_jobs_data)
+from news import get_combined as get_news
 from postcode import find_council, lookup_postcode
 
 st.set_page_config(
@@ -126,10 +127,12 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # ── Dashboard Tabs ──
+# "News" appended at the end so indices of existing tabs (Overview=0,
+# Weather=1, ..., Jobs=12) stay stable; News is tabs[13].
 tabs = st.tabs([
     "Overview", "Weather", "Population", "Finance", "Housing",
     "Education", "Health", "Crime", "Transport", "Environment",
-    "Schemes", "Elections", "Jobs",
+    "Schemes", "Elections", "Jobs", "News",
 ])
 
 # ── TAB: Overview ──
@@ -383,11 +386,62 @@ with tabs[12]:
 
     st.markdown(f"[Search Indeed for {council} jobs](https://uk.indeed.com/jobs?l={council.replace(' ', '+')})")
 
+# ── TAB: News ──
+with tabs[13]:
+    st.markdown('<div class="section-header">UK News & Government Announcements</div>', unsafe_allow_html=True)
+    st.caption(
+        "Headlines from BBC News UK (RSS) and gov.uk announcements (Atom). "
+        "Cached for 24 hours; click a headline to read the full article at the source."
+    )
+
+    news_items = get_news(limit_per_source=10)
+    if not news_items:
+        st.info(
+            "News feeds are unavailable right now — likely a temporary upstream "
+            "issue at BBC News or gov.uk. Try again in a few minutes."
+        )
+    else:
+        gov_items = [n for n in news_items if n["source"] == "gov.uk"]
+        bbc_items = [n for n in news_items if n["source"] == "BBC News"]
+
+        col_gov, col_bbc = st.columns(2)
+
+        with col_gov:
+            st.markdown("##### gov.uk announcements")
+            if not gov_items:
+                st.caption("No gov.uk items available.")
+            for item in gov_items:
+                published = item.get("published") or ""
+                st.markdown(f"""
+                <div class="data-card">
+                    <a href="{item['link']}" target="_blank"><h4>{item['title']}</h4></a>
+                    <p style="color: #94a3b8; font-size: 0.78rem;">{published}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+        with col_bbc:
+            st.markdown("##### BBC News UK")
+            if not bbc_items:
+                st.caption("No BBC items available.")
+            for item in bbc_items:
+                published = item.get("published") or ""
+                st.markdown(f"""
+                <div class="data-card">
+                    <a href="{item['link']}" target="_blank"><h4>{item['title']}</h4></a>
+                    <p style="color: #94a3b8; font-size: 0.78rem;">{published}</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+        st.caption(
+            "Attribution: BBC News content © BBC, linked back to bbc.co.uk. "
+            "gov.uk announcements published under Open Government Licence v3.0."
+        )
+
 # ── Footer ──
 st.markdown("""
 <div class="footer">
     ForThePeople UK — Independent Citizen Transparency Platform<br>
-    Data from ONS, gov.uk, NHS Digital, DfE, Police UK, Met Office, Open-Meteo<br>
+    Data from ONS, gov.uk, NHS Digital, DfE, Police UK, Met Office, Open-Meteo, BBC News<br>
     Not affiliated with any government body. All data is publicly available.<br>
     Built with Python + Streamlit
 </div>
