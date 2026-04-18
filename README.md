@@ -2,10 +2,18 @@
 
 UK citizen transparency platform. Free council-level government data dashboards.
 
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue)](LICENSE)
+
+**Independence:** ForThePeople UK is not affiliated with any government
+body, political party, or campaign. Data is from public open-data sources
+(ONS, gov.uk, NHS Digital, DfE, Police.UK, Met Office, Open-Meteo).
+
 ## Links
 
 - [GitHub](https://github.com/Pawansingh3889/forthepeople-uk)
 - [Run Locally](#setup)
+- [Hugging Face Space](https://huggingface.co/spaces/pawankapkoti/forthepeople-uk)
+- **Contributing:** [`CONTRIBUTING.md`](CONTRIBUTING.md) · [`GOVERNANCE.md`](GOVERNANCE.md) · [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) · [`SECURITY.md`](SECURITY.md) · [`NOTICE`](NOTICE)
 
 ## Setup
 

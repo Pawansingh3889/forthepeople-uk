@@ -1,0 +1,49 @@
+ForThePeople UK
+Copyright 2025-2026 Pawan Singh Kapkoti
+
+This product includes software developed by Pawan Singh Kapkoti
+(https://github.com/Pawansingh3889/forthepeople-uk) and released under
+the Apache License, Version 2.0.
+
+Independence statement
+----------------------
+ForThePeople UK is not affiliated with any government body, political
+party, or campaign. It is a citizen-facing dashboard over publicly
+available data.
+
+Data sources
+------------
+This dashboard aggregates public data from UK government and
+open-data sources. Each upstream has its own licence; the derived
+content on the dashboard inherits those licences:
+
+- Office for National Statistics (ONS) — Open Government Licence v3.0
+  <https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/>
+- gov.uk datasets — Open Government Licence v3.0
+- NHS Digital — Open Government Licence v3.0 (most datasets)
+- Department for Education (DfE) — Open Government Licence v3.0
+- Police.UK — Open Government Licence v3.0
+- Met Office MIDAS / Open Data — Open Government Licence v3.0
+- Open-Meteo — Attribution 4.0 International (CC BY 4.0)
+  <https://creativecommons.org/licenses/by/4.0/>
+
+Under OGL v3.0 and CC BY 4.0, attribution to the upstream source is
+required on any redistribution of the derived data. The dashboard
+attributes every metric to its source inline; contributors must
+preserve those attributions.
+
+Analysis code, caching, validation, and the Streamlit UI are
+separately licensed under Apache 2.0 (see LICENSE).
+
+Third-party software
+--------------------
+Runtime dependencies (Streamlit, pandas, requests, Plotly, and so on)
+are governed by their own licences, which prevail over anything in
+this NOTICE file when that dependency is in use.
+
+Trademarks and logos
+--------------------
+UK government departments, local councils, and other bodies named in
+the dashboard retain the trademark rights to their names and logos.
+Use on this dashboard is limited to accurate attribution of public
+data; the project claims no endorsement.
