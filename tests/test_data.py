@@ -6,22 +6,31 @@ Falls back gracefully on network failures.
 from __future__ import annotations
 
 from data import (
-    get_weather,
-    get_schemes,
-    get_essential_services,
+    UK_ALL,
+    COORDS,
     councils,
+    get_council_data,
+    get_essential_services,
+    get_schemes,
+    get_weather,
 )
 from validators import validate_weather, validate_crime, validate_api_response
 
 
 class TestCouncilDirectory:
     def test_all_regions_present(self) -> None:
-        expected = {
+        # Every English region from the ONS nine-region split must be
+        # present. The "United Kingdom (national)" pseudo-region sits
+        # alongside them as the whole-UK rollup; we require it to exist
+        # but don't pin the exact set, so a future Scotland/Wales/NI
+        # region addition doesn't break this test.
+        required = {
             "Yorkshire and the Humber", "North East", "North West",
             "East Midlands", "West Midlands", "East of England",
             "London", "South East", "South West",
+            "United Kingdom (national)",
         }
-        assert set(councils.keys()) == expected
+        assert required.issubset(set(councils.keys()))
 
     def test_each_region_has_councils(self) -> None:
         for region, council_list in councils.items():
@@ -98,3 +107,30 @@ class TestValidators:
     def test_crime_negative_count(self) -> None:
         v = validate_crime({"total": -5})
         assert not v.valid
+
+
+class TestWholeUK:
+    """The UK-wide pseudo-council must be a first-class option, not a
+    fallback into ``_default_data``."""
+
+    def test_uk_all_is_in_councils_dict(self) -> None:
+        region_keys = list(councils.keys())
+        uk_region = next((r for r in region_keys if UK_ALL in councils[r]), None)
+        assert uk_region is not None, "UK_ALL must be selectable from the sidebar"
+
+    def test_uk_all_has_coords(self) -> None:
+        # Weather + map widgets index into COORDS; missing here means the
+        # whole-UK view crashes on those tabs.
+        assert UK_ALL in COORDS
+        lat, lon = COORDS[UK_ALL]
+        # Rough sanity: UK centroid sits around 54N, 2W.
+        assert 49 < lat < 60
+        assert -8 < lon < 2
+
+    def test_get_council_data_returns_rich_payload_for_uk_all(self) -> None:
+        data = get_council_data(UK_ALL)
+        # Must not fall through to ``_default_data`` — the "Data Coming
+        # Soon" marker string only appears in that fallback.
+        for issue in data["key_issues"]:
+            assert "Data Coming Soon" not in issue.get("description", "")
+        assert data["population"] > 60_000_000, "UK population sanity"

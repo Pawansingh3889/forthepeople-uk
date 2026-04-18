@@ -9,7 +9,14 @@ import requests
 # ═══════════════════════════════════════════════════════════
 # COUNCILS DIRECTORY
 # ═══════════════════════════════════════════════════════════
+# Reserved value meaning "show national / UK-wide data" instead of
+# drilling down to a single council. Used by the sidebar "All UK"
+# option; also a valid key in COORDS, COUNCIL_DATA, and the helpers
+# below.
+UK_ALL = "United Kingdom"
+
 councils = {
+    "United Kingdom (national)": [UK_ALL],
     "Yorkshire and the Humber": [
         "York", "Leeds", "Sheffield", "Bradford", "Hull", "Wakefield",
         "Doncaster", "Barnsley", "Rotherham", "Harrogate", "Scarborough",
@@ -29,6 +36,9 @@ councils = {
 # WEATHER
 # ═══════════════════════════════════════════════════════════
 COORDS = {
+    # Centroid of the UK (approx Morecambe Bay) for the whole-UK weather
+    # rollup. Met Office / Open-Meteo accept these coordinates fine.
+    UK_ALL: (54.0, -2.0),
     "York": (53.96, -1.08), "Leeds": (53.80, -1.55), "Sheffield": (53.38, -1.47),
     "Bradford": (53.79, -1.75), "Hull": (53.74, -0.34), "Wakefield": (53.68, -1.50),
     "Doncaster": (53.52, -1.13), "Barnsley": (53.55, -1.48), "Rotherham": (53.43, -1.36),
@@ -90,6 +100,28 @@ def get_weather(location):
 # COUNCIL DATA
 # ═══════════════════════════════════════════════════════════
 COUNCIL_DATA = {
+    # Whole-UK national rollup. Source attributions live inline in NOTICE;
+    # figures are illustrative for the demo dashboard (ONS headline numbers
+    # where available, rounded). A live deployment can replace this block
+    # with a fetch from ONS datasets.
+    UK_ALL: {
+        "population": 67_030_000,  # ONS mid-2024 UK estimate, rounded
+        "avg_house_price": 289_000,  # Land Registry UK HPI Q1 2026
+        "employment_rate": "75.2%",  # ONS Labour Market Overview
+        "median_salary": 35_500,  # ONS ASHE median gross weekly earnings x52
+        "council_tax": "N/A",  # varies by council
+        "budget": "Varies",
+        "median_age": "40.7",
+        "life_exp_m": 79.4,  # ONS National Life Tables 2022-24
+        "life_exp_f": 83.1,
+        "spending": {"nhs": "40", "education": "14", "welfare": "25", "defence": "5"},
+        "key_issues": [
+            {"title": "Housing Affordability",
+             "description": "Average UK house price is about 8x median salary; waiting lists nationwide exceed 1.3m households."},
+            {"title": "Cost of Living",
+             "description": "Real wages still below pre-2022 peak in several sectors; food and energy price sensitivity remains high."},
+        ],
+    },
     "York": {"population": 211_000, "avg_house_price": 325_000, "employment_rate": "77.2%", "median_salary": 31_500, "council_tax": "1,756", "budget": "423M", "median_age": "38", "life_exp_m": 79.8, "life_exp_f": 83.2,
              "spending": {"adult_social_care": "35", "children_services": "20", "transport": "15", "housing": "10", "waste": "8"},
              "key_issues": [{"title": "Housing Affordability", "description": "Average price 10x median salary. Council waiting list: 3,500 families."},
