@@ -7,9 +7,10 @@ Usage:
     streamlit run app.py
 """
 import streamlit as st
-from data import (councils, get_weather, get_council_data, get_mp_data, get_schemes,
+from data import (UK_ALL, councils, get_weather, get_council_data, get_mp_data, get_schemes,
                    get_housing, get_schools, get_crime_stats, get_health_data, get_transport,
                    get_environment, get_essential_services, get_jobs_data)
+from postcode import find_council, lookup_postcode
 
 st.set_page_config(
     page_title="ForThePeople UK",
@@ -44,20 +45,69 @@ st.markdown("""
 st.sidebar.markdown("## ForThePeople UK")
 st.sidebar.caption("Citizen Transparency Platform")
 
-region = st.sidebar.selectbox("Select Region", [
-    "Yorkshire and the Humber",
-    "North East",
-    "North West",
-    "East Midlands",
-    "West Midlands",
-    "East of England",
-    "London",
-    "South East",
-    "South West",
-])
+# Location slicer — three ways to choose. The postcode input takes
+# precedence: if a valid postcode resolves to a council in our dataset,
+# it updates the Region / Council selectboxes via session state.
+# Falling back to the two dropdowns remains fully functional.
+
+_region_options = list(councils.keys())
+
+
+def _set_selection(region: str, council: str) -> None:
+    """Sync the two selectbox widgets to a given (region, council) pair."""
+    st.session_state["region_select"] = region
+    st.session_state["council_select"] = council
+
+
+postcode_input = st.sidebar.text_input(
+    "Quick lookup — enter a UK postcode",
+    key="postcode_input",
+    placeholder="e.g. YO1 1AA",
+    help="Auto-selects the region and council for that postcode. "
+         "Falls back to the dropdowns below if the postcode is not in our dataset.",
+).strip()
+
+_last_resolved = st.session_state.get("_last_resolved_postcode")
+if postcode_input and postcode_input.upper() != (_last_resolved or "").upper():
+    result = lookup_postcode(postcode_input)
+    if result is None:
+        st.sidebar.error("Postcode not recognised. Try the dropdowns below.")
+    else:
+        match = find_council(result, councils)
+        if match is None:
+            admin = result.get("admin_district") or result.get("parliamentary_constituency") or "?"
+            st.sidebar.warning(
+                f"Valid postcode, but {admin} isn't in the dataset yet. "
+                "Using your previous selection."
+            )
+        else:
+            matched_region, matched_council = match
+            _set_selection(matched_region, matched_council)
+            st.session_state["_last_resolved_postcode"] = postcode_input
+            st.sidebar.success(f"Matched: {matched_council} ({matched_region})")
+
+# "All UK" shortcut button — one-click to the national rollup without
+# searching in the dropdowns.
+if st.sidebar.button("View whole UK", use_container_width=True):
+    _set_selection("United Kingdom (national)", UK_ALL)
+
+region = st.sidebar.selectbox(
+    "Select Region",
+    _region_options,
+    key="region_select",
+)
 
 council_list = councils.get(region, ["Select a council"])
-council = st.sidebar.selectbox("Select Council", council_list)
+# Reset the council selection if it doesn't belong to the current region
+# (e.g. the user changed region manually after a postcode lookup).
+if st.session_state.get("council_select") not in council_list:
+    st.session_state["council_select"] = council_list[0]
+
+council = st.sidebar.selectbox(
+    "Select Council",
+    council_list,
+    key="council_select",
+)
 
 st.sidebar.divider()
 st.sidebar.markdown("**Data Sources**")
