@@ -87,8 +87,13 @@ def get_weather(location):
             "forecast": [{"date": daily["time"][i], "max": daily["temperature_2m_max"][i],
                          "min": daily["temperature_2m_min"][i], "rain": daily["precipitation_sum"][i],
                          "uv": daily.get("uv_index_max", [0]*7)[i],
-                         "sunrise": daily.get("sunrise", [""][7])[i][11:16] if daily.get("sunrise") else "",
-                         "sunset": daily.get("sunset", [""][7])[i][11:16] if daily.get("sunset") else "",
+                         # ``[""] * 7`` — an N-length default list. The earlier
+                         # ``[""][7]`` was a typo: it indexes a 1-element list
+                         # at position 7, raising IndexError the moment
+                         # open-meteo returns sunrise data (which it now does
+                         # by default).
+                         "sunrise": daily.get("sunrise", [""] * 7)[i][11:16] if daily.get("sunrise") else "",
+                         "sunset": daily.get("sunset", [""] * 7)[i][11:16] if daily.get("sunset") else "",
                          "condition": WEATHER_CODES.get(daily["weather_code"][i], "Unknown")}
                         for i in range(len(daily.get("time", [])))]
         }
