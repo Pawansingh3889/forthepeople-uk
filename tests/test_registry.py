@@ -61,6 +61,27 @@ class TestGoverningAuthority:
         assert REGISTRY["Middlesbrough"].region == "North East"
 
 
+class TestOnsAreaUrl:
+    """Deep links to ONS Explore Local Statistics are built from GSS codes."""
+
+    def test_council_gets_gss_deep_link(self) -> None:
+        from data import ons_area_url
+        assert ons_area_url("Hull") == "https://www.ons.gov.uk/explore-local-statistics/areas/E06000010"
+
+    def test_town_links_to_governing_authority(self) -> None:
+        from data import ons_area_url
+        # Huddersfield's page is Kirklees's GSS code.
+        assert ons_area_url("Huddersfield").endswith("/areas/E08000034")
+
+    def test_uk_all_gets_landing_page(self) -> None:
+        from data import ons_area_url
+        assert ons_area_url(UK_ALL) == "https://www.ons.gov.uk/explore-local-statistics/"
+
+    def test_unknown_council_gets_landing_page(self) -> None:
+        from data import ons_area_url
+        assert ons_area_url("Atlantis") == "https://www.ons.gov.uk/explore-local-statistics/"
+
+
 class TestRegistryAgainstPostcodesIo:
     """Every GSS code must match postcodes.io reverse geocoding.
 

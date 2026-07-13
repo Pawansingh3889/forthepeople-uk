@@ -9,6 +9,7 @@ Usage:
     streamlit run app.py
 """
 import os
+from urllib.parse import quote
 
 import streamlit as st
 
@@ -18,7 +19,7 @@ from data import (UK_ALL, councils, get_weather, get_council_data, get_mp_data, 
                    get_petitions,
                    get_schemes, get_housing, get_schools, get_crime_stats, get_health_data,
                    get_transport, get_environment, get_essential_services, get_jobs_data,
-                   get_air_quality, get_floods)
+                   get_air_quality, get_floods, ons_area_url)
 from news import get_combined as get_news
 from postcode import find_council, lookup_postcode
 from registry import REGISTRY
@@ -163,6 +164,11 @@ st.caption(
     "samples — see Data provenance in the sidebar and the source linked in each tab."
 )
 
+# WriteToThem contact link, postcode-prefilled when the visitor used the
+# postcode slicer (their reps are postcode-specific, not council-wide).
+_wtt_pc = st.session_state.get("_last_resolved_postcode")
+WRITE_TO_THEM = f"https://www.writetothem.com/?pc={quote(_wtt_pc)}" if _wtt_pc else "https://www.writetothem.com/"
+
 # ── Dashboard Tabs ──
 # New tabs go on the end so indices of existing ones (Overview=0,
 # Weather=1, ..., Jobs=12) stay stable; News=13, Ask=14, Petitions=15, FOI=16.
@@ -210,6 +216,7 @@ with tabs[0]:
                 <p style="margin-top: 8px;">{m['constituency']}</p>
             </div>
             """, unsafe_allow_html=True)
+        st.markdown(f"[Write to your MP or councillors (WriteToThem)]({WRITE_TO_THEM})")
 
     with col2:
         st.markdown('<div class="section-header">Key Issues</div>', unsafe_allow_html=True)
@@ -255,6 +262,7 @@ with tabs[2]:
     p3.metric("Life Expectancy (M)", f"{data.get('life_exp_m', 78.7)}")
     p4.metric("Life Expectancy (F)", f"{data.get('life_exp_f', 82.4)}")
     st.caption("Source: [ONS Mid-Year Population Estimates](https://www.nomisweb.co.uk)")
+    st.markdown(f"[Explore official {council} statistics on ONS]({ons_area_url(council)}) — 100+ indicators, official and free")
 
 # ── TAB: Finance ──
 with tabs[3]:
@@ -300,7 +308,7 @@ with tabs[5]:
     s2.metric("Ofsted Outstanding", schools['outstanding'])
     s3.metric("Ofsted Good", schools['good'])
     s4.metric("Requires Improvement", schools['requires_improvement'])
-    st.markdown(f"[Find schools in {council}](https://www.gov.uk/school-performance-tables)")
+    st.markdown(f"[Find schools in {council}](https://www.gov.uk/school-performance-tables) · [Official {council} statistics on ONS]({ons_area_url(council)})")
 
 # ── TAB: Health ──
 with tabs[6]:
@@ -310,7 +318,7 @@ with tabs[6]:
     h1.metric("GP Surgeries", health['gp_surgeries'])
     h2.metric("Hospitals", health['hospitals'])
     h3.metric("A&E Wait (avg)", health['ae_wait'])
-    st.markdown("[Find local NHS services](https://www.nhs.uk/service-search)")
+    st.markdown(f"[Find local NHS services](https://www.nhs.uk/service-search) · [Official {council} statistics on ONS]({ons_area_url(council)})")
 
 # ── TAB: Crime ──
 with tabs[7]:
@@ -336,7 +344,7 @@ with tabs[8]:
     st.markdown(f"**Nearest Train Station:** {transport['station']}")
     st.markdown(f"**Bus Provider:** {transport['bus']}")
     st.markdown(f"**Average Commute:** {transport['avg_commute']}")
-    st.markdown("[Plan your journey](https://www.thetrainline.com)")
+    st.markdown(f"[Plan your journey](https://www.thetrainline.com) · [Official {council} statistics on ONS]({ons_area_url(council)})")
 
 # ── TAB: Environment ──
 with tabs[9]:
@@ -461,7 +469,7 @@ with tabs[11]:
             <p>Majority: {majority_text}</p>
         </div>
         """, unsafe_allow_html=True)
-    st.markdown("[Full election results](https://www.electoralcommission.org.uk/)")
+    st.markdown(f"[Full election results](https://www.electoralcommission.org.uk/) · [Write to your representatives (WriteToThem)]({WRITE_TO_THEM})")
 
 # ── TAB: Jobs ──
 with tabs[12]:

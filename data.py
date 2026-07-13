@@ -8,7 +8,7 @@ figures as illustrative and point users at the official source in each tab.
 """
 from registry import COORDS as COORDS  # re-export: app + tests import from here
 from registry import councils as councils  # re-export
-from registry import UK_ALL
+from registry import REGISTRY, UK_ALL
 from sources import air_quality as air_quality_source
 from sources import crime as crime_source
 from sources import floods as floods_source
@@ -88,6 +88,18 @@ def _default_data(council):
 
 def get_council_data(council):
     return COUNCIL_DATA.get(council, _default_data(council))
+
+def ons_area_url(council):
+    """Deep link to the council's ONS Explore Local Statistics hub.
+
+    The service resolves bare GSS codes, so the registry code is the whole
+    link. The whole-UK view and unknown councils get the service landing
+    page instead.
+    """
+    entry = REGISTRY.get(council)
+    if not entry or council == UK_ALL:
+        return "https://www.ons.gov.uk/explore-local-statistics/"
+    return f"https://www.ons.gov.uk/explore-local-statistics/areas/{entry.gss}"
 
 def get_air_quality(council):
     """Live European AQI + pollutants when available; live flag says which."""
