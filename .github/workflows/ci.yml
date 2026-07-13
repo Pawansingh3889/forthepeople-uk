@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 # Opt JavaScript actions into Node.js 24 ahead of the Sep 2026 mandatory
-# cutover (same pattern applied on the OpsMind workflow).
+# cutover.
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
