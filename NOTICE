@@ -30,6 +30,11 @@ content on the dashboard inherits those licences:
   <https://postcodes.io/>
 - UK Parliament Members API — Open Parliament Licence v3.0
   <https://www.parliament.uk/site-information/copyright-parliament/open-parliament-licence/>
+- Nomis (official ONS labour market and population statistics) — Open
+  Government Licence v3.0 <https://www.nomisweb.co.uk>
+- HM Land Registry UK House Price Index — Open Government Licence v3.0.
+  Contains HM Land Registry data (c) Crown copyright and database right,
+  licensed under OGL v3.0 <https://landregistry.data.gov.uk/app/ukhpi>
 - gov.uk announcements (Atom feed) — Open Government Licence v3.0
   <https://www.gov.uk/government/announcements.atom>
 - BBC News UK (RSS feed, headlines + links only) — BBC rights, used

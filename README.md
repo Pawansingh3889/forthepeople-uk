@@ -10,6 +10,12 @@ a public open-data API or clearly marked as indicative sample data.
 
 ### New in this release
 
+- **Live population and house prices** — the totals on Overview, Population
+  and Housing now come from the ONS mid-year estimates (via the Nomis API)
+  and the HM Land Registry UK House Price Index, joined on the registry's
+  GSS codes. The vs-UK price comparison is computed from the same month's
+  UK-wide figure. Median age, waiting lists and rents remain labelled
+  samples for now.
 - **Ask in plain English** — type a question, get an answer from Claude
   grounded in this dashboard's own data, with every figure labelled live
   or indicative. Works three ways: an operator API key (rate-limited),
@@ -51,13 +57,16 @@ anywhere else, so here is exactly where each tab gets its numbers:
 | Weather | [Open-Meteo](https://open-meteo.com) API | Yes, fetched at runtime |
 | Crime | [Police UK](https://data.police.uk) API | Yes, latest published month |
 | MPs | [UK Parliament](https://members.parliament.uk) Members API | Yes, current members; static fallback |
+| Population | ONS mid-year estimates via [Nomis](https://www.nomisweb.co.uk) | Yes, latest estimate; static fallback |
+| House prices | [HM Land Registry UKHPI](https://landregistry.data.gov.uk/app/ukhpi) | Yes, latest published month; static fallback |
 | News | gov.uk + BBC News feeds | Yes, cached 24h |
 | Postcode lookup | [postcodes.io](https://postcodes.io) API | Yes |
 | Ask | Anthropic Claude API (optional) | Only when a key is set; grounded in the dashboard's own data |
 | Everything else | Held in `data.py` | Indicative sample data for demonstration |
 
-The sample tabs (population, finance, housing, education, health, transport,
-environment) carry realistic figures for a handful of Yorkshire councils,
+The sample tabs (finance, education, health, transport, environment, plus
+the population and housing details the live sources don't cover) carry
+realistic figures for a handful of Yorkshire councils,
 national rollup numbers for the whole-UK view, and sensible defaults elsewhere.
 They show the shape of the product; every tab links to the official source
 (ONS, gov.uk, NHS, DfE) so any figure can be checked. Wiring those tabs to
