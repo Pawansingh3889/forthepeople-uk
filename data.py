@@ -168,10 +168,8 @@ def get_council_data(council):
 # MPs & ELECTIONS
 # ═══════════════════════════════════════════════════════════
 MP_DATA = {
-    "York": [{"name": "Rachael Maskell", "party": "Labour", "constituency": "York Central", "majority": 14_539},
-             {"name": "Luke Sherring", "party": "Labour", "constituency": "York Outer", "majority": 8_432}],
-    "Leeds": [{"name": "Hilary Benn", "party": "Labour", "constituency": "Leeds South", "majority": 16_200},
-              {"name": "Alex Sherring", "party": "Labour", "constituency": "Leeds Central and Headingley", "majority": 12_100}],
+    "York": [{"name": "Rachael Maskell", "party": "Labour", "constituency": "York Central", "majority": 14_539}],
+    "Leeds": [{"name": "Hilary Benn", "party": "Labour", "constituency": "Leeds South", "majority": 16_200}],
     "Sheffield": [{"name": "Abtisam Mohamed", "party": "Labour", "constituency": "Sheffield Central", "majority": 15_200}],
     "Bradford": [{"name": "Imran Hussain", "party": "Independent", "constituency": "Bradford East", "majority": 7_400}],
     "Hull": [{"name": "Karl Turner", "party": "Labour", "constituency": "Kingston upon Hull East", "majority": 13_500}],
