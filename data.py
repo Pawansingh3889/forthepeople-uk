@@ -12,6 +12,7 @@ from registry import UK_ALL
 from sources import crime as crime_source
 from sources import house_prices as house_prices_source
 from sources import mps as mps_source
+from sources import petitions as petitions_source
 from sources import population as population_source
 from sources import weather as weather_source
 
@@ -85,6 +86,15 @@ def _default_data(council):
 
 def get_council_data(council):
     return COUNCIL_DATA.get(council, _default_data(council))
+
+def get_petitions(limit=15):
+    """Top open UK Parliament petitions (national), live via the petitions API.
+
+    Returns {"petitions": [...], "live": bool}; the list is empty when the
+    service is unreachable.
+    """
+    res = petitions_source.fetch(limit)
+    return {"petitions": res.data or [], "live": res.live}
 
 def get_population(council):
     """Latest ONS mid-year total population, live via Nomis when possible.
