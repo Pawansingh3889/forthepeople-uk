@@ -9,7 +9,9 @@ figures as illustrative and point users at the official source in each tab.
 from registry import COORDS as COORDS  # re-export: app + tests import from here
 from registry import councils as councils  # re-export
 from registry import UK_ALL
+from sources import air_quality as air_quality_source
 from sources import crime as crime_source
+from sources import floods as floods_source
 from sources import house_prices as house_prices_source
 from sources import mps as mps_source
 from sources import petitions as petitions_source
@@ -86,6 +88,22 @@ def _default_data(council):
 
 def get_council_data(council):
     return COUNCIL_DATA.get(council, _default_data(council))
+
+def get_air_quality(council):
+    """Live European AQI + pollutants when available; live flag says which."""
+    res = air_quality_source.fetch(council)
+    if res.live:
+        return {**res.data, "asof": res.asof, "live": True}
+    return {"live": False}
+
+def get_floods(council):
+    """Flood warnings near the council.
+
+    Returns {"warnings": [...] , "live": bool}. warnings is [] when the service
+    was reached and none are active, and None when it could not be reached.
+    """
+    res = floods_source.fetch(council)
+    return {"warnings": res.data, "live": res.live}
 
 def get_petitions(limit=15):
     """Top open UK Parliament petitions (national), live via the petitions API.
