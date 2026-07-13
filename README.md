@@ -10,6 +10,13 @@ a public open-data API or clearly marked as indicative sample data.
 
 ### New in this release
 
+- **Ask in plain English** — type a question, get an answer from Claude
+  grounded in this dashboard's own data, with every figure labelled live
+  or indicative. Works three ways: an operator API key (rate-limited),
+  a visitor's own key (session-only), or no key at all, where it falls
+  back to a keyword search of the schemes tables. It gives general
+  information and signposting only, never personal eligibility,
+  immigration or legal advice.
 - **Live MPs** — current members, parties and majorities for the
   constituencies matching your council, straight from the UK Parliament
   Members API (Open Parliament Licence v3.0). Static fallback when no
@@ -46,6 +53,7 @@ anywhere else, so here is exactly where each tab gets its numbers:
 | MPs | [UK Parliament](https://members.parliament.uk) Members API | Yes, current members; static fallback |
 | News | gov.uk + BBC News feeds | Yes, cached 24h |
 | Postcode lookup | [postcodes.io](https://postcodes.io) API | Yes |
+| Ask | Anthropic Claude API (optional) | Only when a key is set; grounded in the dashboard's own data |
 | Everything else | Held in `data.py` | Indicative sample data for demonstration |
 
 The sample tabs (population, finance, housing, education, health, transport,
@@ -78,9 +86,35 @@ python -m pytest tests/ -v --timeout=30
 ruff check .
 ```
 
-## 14 Dashboards
+## 15 Dashboards
 
-Overview | Weather | Population | Finance | Housing | Education | Health | Crime | Transport | Environment | Schemes | Elections | Jobs | News
+Overview | Weather | Population | Finance | Housing | Education | Health | Crime | Transport | Environment | Schemes | Elections | Jobs | News | Ask
+
+## The Ask tab
+
+Plain-English questions answered by Claude, grounded in the dashboard's data
+for the selected council. The model is told which figures are live and which
+are indicative samples, and it labels its answers the same way. It will not
+assess anyone's benefit eligibility, immigration status or legal position;
+it points to the gov.uk checkers, Citizens Advice or a regulated adviser
+instead.
+
+The app never needs a key to run. The Ask tab picks its mode automatically:
+
+1. **Operator key** - set `ANTHROPIC_API_KEY` in the environment (on a
+   Hugging Face Space: Settings, then Variables and secrets; on Render: an
+   environment variable). Built-in limits apply because the operator pays
+   per question: 10 per visitor session, 60 per hour in total, short
+   answers, and a low-cost model by default (`claude-haiku-4-5`, override
+   with `ANTHROPIC_MODEL`). Set a monthly spend limit in the Anthropic
+   console as the hard backstop.
+2. **Visitor key** - pasted into the tab, held in that browser session
+   only, never stored.
+3. **No key** - the tab answers with a keyword search over the schemes and
+   services tables instead of AI.
+
+Questions and the selected council's dashboard data are sent to Anthropic's
+API only in modes 1 and 2. Nothing is logged by the app.
 
 ## 50+ Government Schemes
 

@@ -53,6 +53,12 @@ Runtime dependencies (Streamlit, pandas, requests, Plotly, and so on)
 are governed by their own licences, which prevail over anything in
 this NOTICE file when that dependency is in use.
 
+Third-party services
+--------------------
+The optional Ask tab calls Anthropic's Claude API when the operator or
+the visitor supplies an API key; that use is governed by Anthropic's
+terms. With no key configured, no call leaves the app.
+
 Trademarks and logos
 --------------------
 UK government departments, local councils, and other bodies named in
