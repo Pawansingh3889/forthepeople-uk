@@ -12,6 +12,7 @@ from data import (
     COORDS,
     councils,
     get_council_data,
+    get_crime_stats,
     get_essential_services,
     get_schemes,
     get_weather,
@@ -170,6 +171,85 @@ class TestGetWeatherSunriseRegression:
         assert len(result["forecast"]) == 7
         assert result["forecast"][0]["sunrise"] == "05:30"
         assert result["forecast"][0]["sunset"] == "20:15"
+
+
+class TestCrimeLive:
+    """The Crime tab fetches live street-level data from Police UK.
+
+    Two-request flow: ``crime-last-updated`` gives the latest published
+    month, then ``crimes-street/all-crime`` returns one dict per crime.
+    Every failure mode must degrade to the indicative CRIME figures with
+    ``live: False`` — the UI renders a different caption for each.
+    """
+
+    def _mocked_requests(self):
+        """URL-routing mock covering both Police UK endpoints."""
+        def route(url, *args, **kwargs):
+            m = mock.MagicMock()
+            if "crime-last-updated" in url:
+                m.json.return_value = {"date": "2026-05"}
+            else:
+                m.json.return_value = [
+                    {"category": "anti-social-behaviour"},
+                    {"category": "anti-social-behaviour"},
+                    {"category": "violent-crime"},
+                    {"category": "burglary"},
+                    {"category": "drugs"},
+                    {"category": "vehicle-crime"},
+                    {"category": "vehicle-crime"},
+                    {"category": "other-theft"},
+                    {"category": "shoplifting"},
+                ]
+            return m
+        return route
+
+    def test_live_path_counts_categories(self) -> None:
+        with mock.patch("data.requests.get", side_effect=self._mocked_requests()):
+            result = get_crime_stats("Hull")
+        assert result["live"] is True
+        assert result["month"] == "2026-05"
+        assert result["total"] == 9
+        assert result["antisocial"] == 2
+        assert result["violent"] == 1
+        assert result["vehicle"] == 2
+
+    def test_network_failure_falls_back(self) -> None:
+        with mock.patch("data.requests.get", side_effect=OSError("no network")):
+            result = get_crime_stats("Hull")
+        assert result["live"] is False
+        assert result["month"] is None
+        assert result["total"] == 32_000  # indicative Hull figure
+
+    def test_unknown_council_never_hits_api(self) -> None:
+        with mock.patch("data.requests.get") as mocked:
+            result = get_crime_stats("Atlantis")
+        mocked.assert_not_called()
+        assert result["live"] is False
+        assert result["total"] > 0
+
+    def test_uk_all_uses_fallback_not_centroid(self) -> None:
+        # UK_ALL has COORDS (for weather), but a one-mile street-level
+        # crime query at the UK centroid would be meaningless.
+        with mock.patch("data.requests.get") as mocked:
+            result = get_crime_stats(UK_ALL)
+        mocked.assert_not_called()
+        assert result["live"] is False
+
+    def test_error_payload_falls_back(self) -> None:
+        # Police UK returns a dict (not a list) on some errors.
+        def route(url, *args, **kwargs):
+            m = mock.MagicMock()
+            m.json.return_value = {"date": "2026-05"} if "crime-last-updated" in url else {"error": "rate limited"}
+            return m
+        with mock.patch("data.requests.get", side_effect=route):
+            result = get_crime_stats("Hull")
+        assert result["live"] is False
+        assert result["total"] == 32_000
+
+    def test_live_result_passes_validator(self) -> None:
+        with mock.patch("data.requests.get", side_effect=self._mocked_requests()):
+            result = get_crime_stats("Leeds")
+        assert validate_crime(result).valid
 
 
 class TestWholeUK:

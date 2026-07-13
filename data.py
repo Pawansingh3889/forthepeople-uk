@@ -1,10 +1,14 @@
 """UK Government Services — Complete Data Module.
 
-Every major UK public service in one platform.
-All data from gov.uk, ONS, NHS, DfE, DVLA, HMRC, DWP, Police UK, Open-Meteo.
-No API keys required.
+Weather (Open-Meteo) and Crime (Police UK) are live open-data APIs, fetched at
+runtime with no API key; live news and postcode lookup live in ``news.py`` and
+``postcode.py``. The remaining tables in this module are indicative sample data
+for demonstration, pending live-source integration. Callers should treat those
+figures as illustrative and point users at the official source in each tab.
 """
 import requests
+
+from cache import cached
 
 # ═══════════════════════════════════════════════════════════
 # COUNCILS DIRECTORY
@@ -69,6 +73,7 @@ WEATHER_CODES = {
     80: "Rain Showers", 95: "Thunderstorm",
 }
 
+@cached(ttl=600)
 def get_weather(location):
     lat, lon = COORDS.get(location, (53.96, -1.08))
     try:
@@ -346,8 +351,52 @@ CRIME = {
     "Hull": {"total": 32_000, "antisocial": 6_100, "violent": 10_200, "burglary": 1_800, "drugs": 900, "vehicle": 2_100},
 }
 
+# Police UK street-level categories mapped onto the buckets the UI shows.
+CRIME_CATEGORY_MAP = {
+    "anti-social-behaviour": "antisocial",
+    "violent-crime": "violent",
+    "burglary": "burglary",
+    "drugs": "drugs",
+    "vehicle-crime": "vehicle",
+}
+
+def _crime_fallback(council):
+    base = CRIME.get(council, {"total": 25_000, "antisocial": 4_500, "violent": 8_000,
+                               "burglary": 1_500, "drugs": 800, "vehicle": 2_000})
+    return {**base, "live": False, "month": None}
+
+@cached(ttl=21_600)
 def get_crime_stats(council):
-    return CRIME.get(council, {"total": 25_000, "antisocial": 4_500, "violent": 8_000, "burglary": 1_500, "drugs": 800, "vehicle": 2_000})
+    """Live street-level crime from the Police UK open data API (no key).
+
+    Counts crimes within roughly a one-mile radius of the council centre for
+    the latest month the police have published. Cached for six hours; the data
+    only updates monthly. Falls back to the indicative CRIME figures when the
+    API is unreachable or the location has no usable coordinates; the ``live``
+    flag on the result says which you got. The whole-UK view always uses the
+    fallback, because a one-mile radius around the UK centroid means nothing.
+    """
+    coords = COORDS.get(council)
+    if not coords or council == UK_ALL:
+        return _crime_fallback(council)
+    lat, lon = coords
+    try:
+        month = requests.get("https://data.police.uk/api/crime-last-updated", timeout=10).json().get("date")
+        crimes = requests.get(
+            "https://data.police.uk/api/crimes-street/all-crime",
+            params={"lat": lat, "lng": lon, "date": month}, timeout=15,
+        ).json()
+        if not isinstance(crimes, list):
+            return _crime_fallback(council)
+        counts = {"total": len(crimes), "antisocial": 0, "violent": 0,
+                  "burglary": 0, "drugs": 0, "vehicle": 0}
+        for c in crimes:
+            bucket = CRIME_CATEGORY_MAP.get(c.get("category"))
+            if bucket:
+                counts[bucket] += 1
+        return {**counts, "live": True, "month": month}
+    except Exception:
+        return _crime_fallback(council)
 
 
 # ═══════════════════════════════════════════════════════════
