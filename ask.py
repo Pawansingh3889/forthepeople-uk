@@ -29,6 +29,7 @@ from data import (
     get_essential_services,
     get_housing,
     get_mp_data,
+    get_population,
     get_schemes,
     get_schools,
 )
@@ -63,8 +64,6 @@ def build_context(council: str) -> str:
 
     Provenance labels ride along so the model can caption figures honestly.
     """
-    crime = get_crime_stats(council)
-    mps = get_mp_data(council)
     schemes = {
         category: [f"{s['name']} - {s.get('who', '')} ({s.get('amount', '')})" for s in entries]
         for category, entries in get_schemes().items()
@@ -72,23 +71,21 @@ def build_context(council: str) -> str:
     snapshot = {
         "council": council,
         "provenance": {
-            "live": ["crime" if crime.get("live") else None,
-                     "mps" if mps and mps[0].get("live") else None,
-                     "weather", "news", "postcode lookup"],
-            "indicative_sample": ["population", "finance", "housing", "education",
-                                  "health", "transport", "environment"]
-                                 + ([] if crime.get("live") else ["crime"])
-                                 + ([] if mps and mps[0].get("live") else ["mps"]),
+            "always_live": ["weather", "news", "postcode lookup"],
+            "flagged_blocks": "crime, mps, population and housing each carry their own "
+                              "live flag; live=false means indicative sample data",
+            "indicative_sample": ["finance", "education", "health", "transport",
+                                  "environment", "overview details"],
         },
         "overview_indicative": get_council_data(council),
-        "crime": crime,
-        "mps": mps,
-        "housing_indicative": get_housing(council),
+        "population": get_population(council),
+        "crime": get_crime_stats(council),
+        "mps": get_mp_data(council),
+        "housing": get_housing(council),
         "schools_indicative": get_schools(council),
         "schemes": schemes,
         "essential_services": get_essential_services(),
     }
-    snapshot["provenance"]["live"] = [x for x in snapshot["provenance"]["live"] if x]
     return json.dumps(snapshot, separators=(",", ":"), default=str)
 
 

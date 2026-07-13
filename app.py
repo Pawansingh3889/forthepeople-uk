@@ -13,9 +13,9 @@ import os
 import streamlit as st
 
 import ask
-from data import (UK_ALL, councils, get_weather, get_council_data, get_mp_data, get_schemes,
-                   get_housing, get_schools, get_crime_stats, get_health_data, get_transport,
-                   get_environment, get_essential_services, get_jobs_data)
+from data import (UK_ALL, councils, get_weather, get_council_data, get_mp_data, get_population,
+                   get_schemes, get_housing, get_schools, get_crime_stats, get_health_data,
+                   get_transport, get_environment, get_essential_services, get_jobs_data)
 from news import get_combined as get_news
 from postcode import find_council, lookup_postcode
 from registry import REGISTRY
@@ -124,10 +124,13 @@ with st.sidebar.expander("Data provenance"):
         "- Weather — [Open-Meteo](https://open-meteo.com)\n"
         "- Crime — [Police UK](https://data.police.uk)\n"
         "- MPs — [UK Parliament](https://members.parliament.uk) Members API\n"
+        "- Population — ONS mid-year estimate via [Nomis](https://www.nomisweb.co.uk)\n"
+        "- House prices — [HM Land Registry UKHPI](https://landregistry.data.gov.uk/app/ukhpi)\n"
         "- News — gov.uk + BBC feeds\n"
         "- Postcode lookup — [postcodes.io](https://postcodes.io)\n\n"
-        "**Indicative sample data** (pending live integration): population, "
-        "finance, housing, education, health, transport, environment. "
+        "**Indicative sample data** (pending live integration): finance, "
+        "education, health, transport, environment, plus the remaining "
+        "population and housing details (median age, waiting lists, rents). "
         "Cross-check against the official source linked in each tab.\n\n"
         "The Ask tab sends your question plus the selected council's dashboard "
         "data to Anthropic's Claude API, but only when an API key is configured; "
@@ -147,9 +150,9 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 st.caption(
-    "Live data: Weather, Crime, MPs, News and postcode lookup. Other tabs show "
-    "indicative sample figures for demonstration — see Data provenance in the "
-    "sidebar and the official source linked in each tab."
+    "Live data: Weather, Crime, MPs, Population, House prices, News and postcode "
+    "lookup. Remaining figures are indicative samples for demonstration — see "
+    "Data provenance in the sidebar and the official source linked in each tab."
 )
 
 # ── Dashboard Tabs ──
@@ -169,9 +172,13 @@ with tabs[0]:
     if _info and council != UK_ALL:
         st.caption(f"Local authority: {_info.authority} · ONS code {_info.gss}")
 
+    _pop = get_population(council)
+    _housing = get_housing(council)
+    _pop_label = f"Population ({_pop['year']}, live)" if _pop["live"] else "Population"
+    _price_label = f"Avg House Price ({_housing['month']}, live)" if _housing.get("live") else "Avg House Price"
     c1, c2, c3, c4, c5 = st.columns(5)
-    c1.markdown(f'<div class="stat-card"><div class="stat-value">{data["population"]:,}</div><div class="stat-label">Population</div></div>', unsafe_allow_html=True)
-    c2.markdown(f'<div class="stat-card"><div class="stat-value">GBP {data["avg_house_price"]:,}</div><div class="stat-label">Avg House Price</div></div>', unsafe_allow_html=True)
+    c1.markdown(f'<div class="stat-card"><div class="stat-value">{_pop["population"]:,}</div><div class="stat-label">{_pop_label}</div></div>', unsafe_allow_html=True)
+    c2.markdown(f'<div class="stat-card"><div class="stat-value">GBP {_housing["avg_price"]:,}</div><div class="stat-label">{_price_label}</div></div>', unsafe_allow_html=True)
     c3.markdown(f'<div class="stat-card"><div class="stat-value">{data["employment_rate"]}</div><div class="stat-label">Employment Rate</div></div>', unsafe_allow_html=True)
     c4.markdown(f'<div class="stat-card"><div class="stat-value">GBP {data["median_salary"]:,}</div><div class="stat-label">Median Salary</div></div>', unsafe_allow_html=True)
     c5.markdown(f'<div class="stat-card"><div class="stat-value">{data["council_tax"]}</div><div class="stat-label">Council Tax (Band D)</div></div>', unsafe_allow_html=True)
@@ -229,12 +236,17 @@ with tabs[1]:
 with tabs[2]:
     st.markdown('<div class="section-header">Population & Demographics</div>', unsafe_allow_html=True)
     data = get_council_data(council)
+    pop = get_population(council)
+    if pop["live"]:
+        st.caption(f"Total population: live ONS mid-{pop['year']} estimate via Nomis. Other figures are indicative samples.")
+    else:
+        st.caption("Indicative sample figures — the live ONS estimate could not be fetched.")
     p1, p2, p3, p4 = st.columns(4)
-    p1.metric("Total Population", f"{data['population']:,}")
+    p1.metric(f"Total Population{' (' + pop['year'] + ')' if pop['live'] else ''}", f"{pop['population']:,}")
     p2.metric("Median Age", data.get("median_age", "39"))
     p3.metric("Life Expectancy (M)", f"{data.get('life_exp_m', 78.7)}")
     p4.metric("Life Expectancy (F)", f"{data.get('life_exp_f', 82.4)}")
-    st.caption("Source: ONS Mid-Year Population Estimates")
+    st.caption("Source: [ONS Mid-Year Population Estimates](https://www.nomisweb.co.uk)")
 
 # ── TAB: Finance ──
 with tabs[3]:
@@ -254,9 +266,14 @@ with tabs[3]:
 with tabs[4]:
     st.markdown('<div class="section-header">Housing Market</div>', unsafe_allow_html=True)
     housing = get_housing(council)
+    if housing.get("live"):
+        st.caption(f"Average price: live from HM Land Registry UKHPI, {housing['month']}. Waiting list and rents are indicative samples.")
+    else:
+        st.caption("Indicative sample figures — live UKHPI data could not be fetched for this selection.")
+    vs_uk = housing.get("vs_uk")
     h1, h2, h3 = st.columns(3)
     h1.metric("Average Price", f"GBP {housing['avg_price']:,}")
-    h2.metric("vs UK Average", f"{housing['vs_uk']:+,}")
+    h2.metric("vs UK Average", f"{vs_uk:+,}" if isinstance(vs_uk, int) else "N/A")
     h3.metric("Waiting List", f"{housing.get('waiting_list', 'N/A'):,}" if isinstance(housing.get('waiting_list'), int) else housing.get('waiting_list', 'N/A'))
 
     st.markdown("""

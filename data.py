@@ -10,7 +10,9 @@ from registry import COORDS as COORDS  # re-export: app + tests import from here
 from registry import councils as councils  # re-export
 from registry import UK_ALL
 from sources import crime as crime_source
+from sources import house_prices as house_prices_source
 from sources import mps as mps_source
+from sources import population as population_source
 from sources import weather as weather_source
 
 
@@ -83,6 +85,17 @@ def _default_data(council):
 
 def get_council_data(council):
     return COUNCIL_DATA.get(council, _default_data(council))
+
+def get_population(council):
+    """Latest ONS mid-year total population, live via Nomis when possible.
+
+    Falls back to the indicative COUNCIL_DATA figure; the ``live`` flag and
+    ``year`` say which you got.
+    """
+    res = population_source.fetch(council)
+    if res.live:
+        return {**res.data, "live": True}
+    return {"population": get_council_data(council)["population"], "year": None, "live": False}
 
 
 # ═══════════════════════════════════════════════════════════
@@ -249,8 +262,22 @@ HOUSING = {
     "Hull": {"avg_price": 145_000, "vs_uk": -150_000, "waiting_list": 8_500, "new_builds_2024": 900, "avg_rent_pcm": 550},
 }
 
-def get_housing(council):
+def _housing_fallback(council):
     return HOUSING.get(council, {"avg_price": 250_000, "vs_uk": -45_000, "waiting_list": "N/A", "new_builds_2024": "N/A", "avg_rent_pcm": 800})
+
+def get_housing(council):
+    """Housing figures with the average price live from UKHPI when possible.
+
+    The live path overlays avg_price / vs_uk / month onto the indicative
+    table, which keeps supplying the fields UKHPI doesn't cover (waiting
+    list, rents, new builds). The ``live`` flag says which price you got.
+    """
+    base = _housing_fallback(council)
+    res = house_prices_source.fetch(council)
+    if res.live:
+        return {**base, "avg_price": res.data["avg_price"], "vs_uk": res.data.get("vs_uk"),
+                "annual_change": res.data.get("annual_change"), "month": res.asof, "live": True}
+    return {**base, "live": False, "month": None}
 
 
 # ═══════════════════════════════════════════════════════════
