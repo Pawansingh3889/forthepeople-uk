@@ -10,6 +10,17 @@ a public open-data API or clearly marked as indicative sample data.
 
 ### New in this release
 
+- **Live MPs** — current members, parties and majorities for the
+  constituencies matching your council, straight from the UK Parliament
+  Members API (Open Parliament Licence v3.0). Static fallback when no
+  constituency shares the council's name.
+- **Council registry with ONS GSS codes** — every selectable place now
+  carries the GSS code of its governing authority (`registry.py`),
+  cross-checked against postcodes.io in CI. GSS codes are the join key
+  for ONS, Land Registry and most other official datasets, so future
+  live integrations start from here. The registry also records who
+  actually governs each town — Huddersfield maps to Kirklees, Harrogate
+  to North Yorkshire.
 - **Live crime statistics** — the Crime tab now pulls street-level data
   from the Police UK open API for the latest published month, counted
   within about a mile of the council centre. No API key needed.
@@ -32,17 +43,20 @@ anywhere else, so here is exactly where each tab gets its numbers:
 |-----|--------|-------|
 | Weather | [Open-Meteo](https://open-meteo.com) API | Yes, fetched at runtime |
 | Crime | [Police UK](https://data.police.uk) API | Yes, latest published month |
+| MPs | [UK Parliament](https://members.parliament.uk) Members API | Yes, current members; static fallback |
 | News | gov.uk + BBC News feeds | Yes, cached 24h |
 | Postcode lookup | [postcodes.io](https://postcodes.io) API | Yes |
 | Everything else | Held in `data.py` | Indicative sample data for demonstration |
 
 The sample tabs (population, finance, housing, education, health, transport,
-environment, MPs) carry realistic figures for a handful of Yorkshire councils,
+environment) carry realistic figures for a handful of Yorkshire councils,
 national rollup numbers for the whole-UK view, and sensible defaults elsewhere.
 They show the shape of the product; every tab links to the official source
 (ONS, gov.uk, NHS, DfE) so any figure can be checked. Wiring those tabs to
-their own live APIs is the roadmap — the four live sources above show the
-pattern, and none of them needs an API key.
+their own live APIs is the roadmap — the five live sources above show the
+pattern, none of them needs an API key, and the GSS codes in `registry.py`
+are the join key the remaining integrations (ONS population, Land Registry
+house prices) will use.
 
 ## Links
 
@@ -61,7 +75,7 @@ No API keys needed. Tests and lint run the same way CI does:
 
 ```bash
 python -m pytest tests/ -v --timeout=30
-ruff check app.py data.py cache.py validators.py postcode.py news.py
+ruff check .
 ```
 
 ## 14 Dashboards

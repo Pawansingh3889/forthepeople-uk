@@ -20,9 +20,8 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install ruff
-      # Include the new postcode + news modules in the lint surface so a
-      # future rule change lands in CI too, not just locally.
-      - run: ruff check app.py data.py cache.py validators.py postcode.py news.py
+      # Whole-repo lint so new modules are covered without editing this list.
+      - run: ruff check .
       - name: Type check (ty)
         run: |
           pip install ty
