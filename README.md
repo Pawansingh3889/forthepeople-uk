@@ -61,6 +61,8 @@ anywhere else, so here is exactly where each tab gets its numbers:
 | House prices | [HM Land Registry UKHPI](https://landregistry.data.gov.uk/app/ukhpi) | Yes, latest published month; static fallback |
 | News | gov.uk + BBC News feeds | Yes, cached 24h |
 | Postcode lookup | [postcodes.io](https://postcodes.io) API | Yes |
+| Petitions | [UK Parliament petitions](https://petition.parliament.uk) API | Yes, top open petitions |
+| FOI | Signposting via [WhatDoTheyKnow](https://www.whatdotheyknow.com) | Builds a request route per council (not a data feed) |
 | Ask | Anthropic Claude API (optional) | Only when a key is set; grounded in the dashboard's own data |
 | Everything else | Held in `data.py` | Indicative sample data for demonstration |
 
@@ -95,9 +97,9 @@ python -m pytest tests/ -v --timeout=30
 ruff check .
 ```
 
-## 15 Dashboards
+## 17 Dashboards
 
-Overview | Weather | Population | Finance | Housing | Education | Health | Crime | Transport | Environment | Schemes | Elections | Jobs | News | Ask
+Overview | Weather | Population | Finance | Housing | Education | Health | Crime | Transport | Environment | Schemes | Elections | Jobs | News | Ask | Petitions | FOI
 
 ## The Ask tab
 

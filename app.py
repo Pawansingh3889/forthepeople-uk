@@ -13,7 +13,9 @@ import os
 import streamlit as st
 
 import ask
+import foi
 from data import (UK_ALL, councils, get_weather, get_council_data, get_mp_data, get_population,
+                   get_petitions,
                    get_schemes, get_housing, get_schools, get_crime_stats, get_health_data,
                    get_transport, get_environment, get_essential_services, get_jobs_data)
 from news import get_combined as get_news
@@ -126,12 +128,15 @@ with st.sidebar.expander("Data provenance"):
         "- MPs — [UK Parliament](https://members.parliament.uk) Members API\n"
         "- Population — ONS mid-year estimate via [Nomis](https://www.nomisweb.co.uk)\n"
         "- House prices — [HM Land Registry UKHPI](https://landregistry.data.gov.uk/app/ukhpi)\n"
+        "- Petitions — [UK Parliament petitions](https://petition.parliament.uk)\n"
         "- News — gov.uk + BBC feeds\n"
         "- Postcode lookup — [postcodes.io](https://postcodes.io)\n\n"
         "**Indicative sample data** (pending live integration): finance, "
         "education, health, transport, environment, plus the remaining "
         "population and housing details (median age, waiting lists, rents). "
         "Cross-check against the official source linked in each tab.\n\n"
+        "The FOI tab is signposting, not data: it builds a Freedom of "
+        "Information request route to the selected council via WhatDoTheyKnow.\n\n"
         "The Ask tab sends your question plus the selected council's dashboard "
         "data to Anthropic's Claude API, but only when an API key is configured; "
         "with no key it searches the schemes tables locally instead."
@@ -150,18 +155,18 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 st.caption(
-    "Live data: Weather, Crime, MPs, Population, House prices, News and postcode "
-    "lookup. Remaining figures are indicative samples for demonstration — see "
+    "Live data: Weather, Crime, MPs, Population, House prices, Petitions, News and "
+    "postcode lookup. Remaining figures are indicative samples for demonstration — see "
     "Data provenance in the sidebar and the official source linked in each tab."
 )
 
 # ── Dashboard Tabs ──
 # New tabs go on the end so indices of existing ones (Overview=0,
-# Weather=1, ..., Jobs=12) stay stable; News is tabs[13], Ask is tabs[14].
+# Weather=1, ..., Jobs=12) stay stable; News=13, Ask=14, Petitions=15, FOI=16.
 tabs = st.tabs([
     "Overview", "Weather", "Population", "Finance", "Housing",
     "Education", "Health", "Crime", "Transport", "Environment",
-    "Schemes", "Elections", "Jobs", "News", "Ask",
+    "Schemes", "Elections", "Jobs", "News", "Ask", "Petitions", "FOI",
 ])
 
 # ── TAB: Overview ──
@@ -560,6 +565,66 @@ with tabs[14]:
                     """, unsafe_allow_html=True)
             else:
                 st.info("Nothing matched. Try different words, browse the Schemes tab, or start from [gov.uk](https://www.gov.uk/check-benefits-financial-support).")
+
+# ── TAB: Petitions ──
+with tabs[15]:
+    st.markdown('<div class="section-header">UK Parliament Petitions</div>', unsafe_allow_html=True)
+    pet = get_petitions()
+    if pet["live"] and pet["petitions"]:
+        st.caption(
+            "Live from the UK Parliament petitions API — top open petitions by "
+            "signatures, nationwide (not council-specific). 10,000 signatures earns "
+            "a government response; 100,000 makes a petition eligible for debate."
+        )
+        for p in pet["petitions"]:
+            if p["debated"]:
+                status = '<span style="color:#a855f7;">Debated in Parliament</span>'
+            elif p["government_responded"]:
+                status = '<span style="color:#f59e0b;">Government responded</span>'
+            elif p["signatures"] >= 100_000:
+                status = '<span style="color:#a855f7;">Past debate threshold</span>'
+            elif p["signatures"] >= 10_000:
+                status = '<span style="color:#f59e0b;">Past response threshold</span>'
+            else:
+                status = '<span style="color:#94a3b8;">Gathering signatures</span>'
+            st.markdown(f"""
+            <div class="data-card">
+                <a href="{p['url']}" target="_blank" style="font-weight:700; font-size:1.02rem;">{p['action']}</a>
+                <p style="margin:6px 0 0 0;"><span style="color:#22c55e; font-weight:700;">{p['signatures']:,}</span> signatures &nbsp;·&nbsp; {status}</p>
+            </div>
+            """, unsafe_allow_html=True)
+            st.progress(min(p["signatures"] / 100_000, 1.0))
+        st.markdown("[Start or search petitions on petition.parliament.uk](https://petition.parliament.uk)")
+    else:
+        st.info("The petitions service is unavailable right now. You can browse petitions directly at [petition.parliament.uk](https://petition.parliament.uk).")
+
+# ── TAB: FOI ──
+with tabs[16]:
+    st.markdown('<div class="section-header">Freedom of Information</div>', unsafe_allow_html=True)
+    links = foi.foi_links(council)
+    if links["authority"]:
+        st.markdown(
+            f"Anyone can ask **{links['authority']}** for recorded information under the "
+            f"Freedom of Information Act 2000. By law they must respond within "
+            f"**{links['response_days']} working days**, and it is free to ask."
+        )
+        st.markdown(f"- **[Start a request to {links['authority']} on WhatDoTheyKnow]({links['whatdotheyknow']})** — free, and it publishes the answer for everyone")
+    else:
+        st.markdown(
+            "Anyone can ask a public authority for recorded information under the "
+            f"Freedom of Information Act 2000, and they must respond within "
+            f"**{links['response_days']} working days**. Pick a council in the sidebar for a direct request link."
+        )
+        st.markdown(f"- **[Find your authority on WhatDoTheyKnow]({links['whatdotheyknow']})**")
+    st.markdown(f"- [How to make an FOI request (gov.uk)]({links['gov_guide']})")
+    st.markdown(f"- [Your right to official information (ICO)]({links['ico_guide']})")
+
+    st.markdown("**Request template** — copy, edit the details, and send")
+    st.code(foi.request_template(links["authority"]), language=None)
+    st.caption(
+        "FOI covers recorded information held by the authority (spending, policies, "
+        "correspondence). For your own personal data, use a Subject Access Request instead."
+    )
 
 # ── Footer ──
 st.markdown("""
