@@ -19,18 +19,25 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install "huggingface_hub>=0.24"
+      - run: pip install "huggingface_hub>=0.24,<1.0"
       - name: Upload to the Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GITHUB_SHA: ${{ github.sha }}
         run: |
-          huggingface-cli upload pawankapkoti/forthepeople-uk . . \
-            --repo-type=space \
-            --commit-message="Sync from GitHub ${GITHUB_SHA::7}" \
-            --exclude="tests/*" \
-            --exclude=".github/*" \
-            --exclude="README.md" \
-            --exclude="__pycache__/*" \
-            --exclude="**/__pycache__/*" \
-            --exclude=".cache/*" \
-            --exclude="*.pyc"
+          python - <<'PY'
+          import os
+          from huggingface_hub import upload_folder
+
+          upload_folder(
+              repo_id="pawankapkoti/forthepeople-uk",
+              repo_type="space",
+              folder_path=".",
+              token=os.environ["HF_TOKEN"],
+              commit_message=f"Sync from GitHub {os.environ.get('GITHUB_SHA', '')[:7]}",
+              ignore_patterns=[
+                  "tests/*", ".github/*", "README.md",
+                  "**/__pycache__/*", "*.pyc", ".cache/*", ".git/*",
+              ],
+          )
+          PY
