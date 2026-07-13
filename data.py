@@ -6,104 +6,25 @@ runtime with no API key; live news and postcode lookup live in ``news.py`` and
 for demonstration, pending live-source integration. Callers should treat those
 figures as illustrative and point users at the official source in each tab.
 """
-import requests
+from registry import COORDS as COORDS  # re-export: app + tests import from here
+from registry import councils as councils  # re-export
+from registry import UK_ALL
+from sources import crime as crime_source
+from sources import mps as mps_source
+from sources import weather as weather_source
 
-from cache import cached
-
-# ═══════════════════════════════════════════════════════════
-# COUNCILS DIRECTORY
-# ═══════════════════════════════════════════════════════════
-# Reserved value meaning "show national / UK-wide data" instead of
-# drilling down to a single council. Used by the sidebar "All UK"
-# option; also a valid key in COORDS, COUNCIL_DATA, and the helpers
-# below.
-UK_ALL = "United Kingdom"
-
-councils = {
-    "United Kingdom (national)": [UK_ALL],
-    "Yorkshire and the Humber": [
-        "York", "Leeds", "Sheffield", "Bradford", "Hull", "Wakefield",
-        "Doncaster", "Barnsley", "Rotherham", "Harrogate", "Scarborough",
-        "Huddersfield", "Halifax", "Middlesbrough", "Grimsby",
-    ],
-    "North East": ["Newcastle", "Sunderland", "Durham", "Darlington", "Hartlepool"],
-    "North West": ["Manchester", "Liverpool", "Lancaster", "Blackpool", "Preston", "Chester"],
-    "East Midlands": ["Nottingham", "Leicester", "Derby", "Lincoln", "Northampton"],
-    "West Midlands": ["Birmingham", "Coventry", "Wolverhampton", "Stoke-on-Trent"],
-    "East of England": ["Norwich", "Cambridge", "Ipswich", "Peterborough", "Colchester"],
-    "London": ["Westminster", "Camden", "Greenwich", "Hackney", "Tower Hamlets", "Croydon"],
-    "South East": ["Brighton", "Oxford", "Reading", "Southampton", "Canterbury"],
-    "South West": ["Bristol", "Bath", "Exeter", "Plymouth", "Bournemouth"],
-}
 
 # ═══════════════════════════════════════════════════════════
-# WEATHER
+# WEATHER — fetch logic lives in sources/weather.py; canonical
+# council directory (names, regions, coords, GSS codes) in registry.py
 # ═══════════════════════════════════════════════════════════
-COORDS = {
-    # Centroid of the UK (approx Morecambe Bay) for the whole-UK weather
-    # rollup. Met Office / Open-Meteo accept these coordinates fine.
-    UK_ALL: (54.0, -2.0),
-    "York": (53.96, -1.08), "Leeds": (53.80, -1.55), "Sheffield": (53.38, -1.47),
-    "Bradford": (53.79, -1.75), "Hull": (53.74, -0.34), "Wakefield": (53.68, -1.50),
-    "Doncaster": (53.52, -1.13), "Barnsley": (53.55, -1.48), "Rotherham": (53.43, -1.36),
-    "Harrogate": (53.99, -1.54), "Scarborough": (54.28, -0.40), "Huddersfield": (53.65, -1.78),
-    "Halifax": (53.72, -1.86), "Middlesbrough": (54.57, -1.23), "Grimsby": (53.57, -0.08),
-    "Newcastle": (54.97, -1.61), "Sunderland": (54.91, -1.38), "Durham": (54.78, -1.58),
-    "Darlington": (54.52, -1.55), "Hartlepool": (54.69, -1.21),
-    "Manchester": (53.48, -2.24), "Liverpool": (53.41, -2.99), "Lancaster": (54.05, -2.80),
-    "Blackpool": (53.81, -3.05), "Preston": (53.76, -2.70), "Chester": (53.19, -2.89),
-    "Nottingham": (52.95, -1.15), "Leicester": (52.63, -1.13), "Derby": (52.92, -1.47),
-    "Lincoln": (53.23, -0.54), "Northampton": (52.24, -0.90),
-    "Birmingham": (52.49, -1.90), "Coventry": (52.41, -1.51),
-    "Wolverhampton": (52.59, -2.13), "Stoke-on-Trent": (53.00, -2.18),
-    "Norwich": (52.63, 1.30), "Cambridge": (52.21, 0.12), "Ipswich": (52.06, 1.15),
-    "Peterborough": (52.57, -0.24), "Colchester": (51.89, 0.90),
-    "Westminster": (51.50, -0.14), "Camden": (51.54, -0.14), "Greenwich": (51.48, 0.01),
-    "Hackney": (51.54, -0.06), "Tower Hamlets": (51.52, -0.03), "Croydon": (51.38, -0.10),
-    "Brighton": (50.82, -0.14), "Oxford": (51.75, -1.25), "Reading": (51.45, -0.97),
-    "Southampton": (50.90, -1.40), "Canterbury": (51.28, 1.08),
-    "Bristol": (51.45, -2.59), "Bath": (51.38, -2.36), "Exeter": (50.72, -3.53),
-    "Plymouth": (50.37, -4.14), "Bournemouth": (50.72, -1.88),
-}
-
-WEATHER_CODES = {
-    0: "Clear", 1: "Mainly Clear", 2: "Partly Cloudy", 3: "Overcast",
-    45: "Foggy", 51: "Light Drizzle", 53: "Drizzle", 61: "Light Rain",
-    63: "Rain", 65: "Heavy Rain", 71: "Light Snow", 73: "Snow",
-    80: "Rain Showers", 95: "Thunderstorm",
-}
-
-@cached(ttl=600)
 def get_weather(location):
-    lat, lon = COORDS.get(location, (53.96, -1.08))
-    try:
-        r = requests.get(
-            f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
-            f"&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code,apparent_temperature"
-            f"&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code,uv_index_max,sunrise,sunset"
-            f"&timezone=Europe/London&forecast_days=7", timeout=10
-        ).json()
-        cur = r.get("current", {})
-        daily = r.get("daily", {})
-        return {
-            "temp": cur.get("temperature_2m"), "feels_like": cur.get("apparent_temperature"),
-            "humidity": cur.get("relative_humidity_2m"), "wind": cur.get("wind_speed_10m"),
-            "condition": WEATHER_CODES.get(cur.get("weather_code", 0), "Unknown"),
-            "forecast": [{"date": daily["time"][i], "max": daily["temperature_2m_max"][i],
-                         "min": daily["temperature_2m_min"][i], "rain": daily["precipitation_sum"][i],
-                         "uv": daily.get("uv_index_max", [0]*7)[i],
-                         # ``[""] * 7`` — an N-length default list. The earlier
-                         # ``[""][7]`` was a typo: it indexes a 1-element list
-                         # at position 7, raising IndexError the moment
-                         # open-meteo returns sunrise data (which it now does
-                         # by default).
-                         "sunrise": daily.get("sunrise", [""] * 7)[i][11:16] if daily.get("sunrise") else "",
-                         "sunset": daily.get("sunset", [""] * 7)[i][11:16] if daily.get("sunset") else "",
-                         "condition": WEATHER_CODES.get(daily["weather_code"][i], "Unknown")}
-                        for i in range(len(daily.get("time", [])))]
-        }
-    except Exception as e:
-        return {"error": str(e)}
+    """Current conditions + 7-day forecast, in the shape the UI expects.
+
+    Thin adapter over sources.weather; returns {"error": ...} when the
+    API is unreachable.
+    """
+    return weather_source.fetch(location).data
 
 
 # ═══════════════════════════════════════════════════════════
@@ -176,6 +97,15 @@ MP_DATA = {
 }
 
 def get_mp_data(council):
+    """Current MPs, live from the Parliament Members API where possible.
+
+    Live entries carry ``live: True`` so the UI can label provenance; when
+    the API is unavailable (or no constituency matches the council name)
+    the static MP_DATA sample or a check-gov.uk pointer comes back instead.
+    """
+    res = mps_source.fetch(council)
+    if res.live:
+        return res.data
     return MP_DATA.get(council, [{"name": "Check gov.uk", "party": "N/A", "constituency": council, "majority": 0}])
 
 
@@ -349,52 +279,21 @@ CRIME = {
     "Hull": {"total": 32_000, "antisocial": 6_100, "violent": 10_200, "burglary": 1_800, "drugs": 900, "vehicle": 2_100},
 }
 
-# Police UK street-level categories mapped onto the buckets the UI shows.
-CRIME_CATEGORY_MAP = {
-    "anti-social-behaviour": "antisocial",
-    "violent-crime": "violent",
-    "burglary": "burglary",
-    "drugs": "drugs",
-    "vehicle-crime": "vehicle",
-}
-
 def _crime_fallback(council):
     base = CRIME.get(council, {"total": 25_000, "antisocial": 4_500, "violent": 8_000,
                                "burglary": 1_500, "drugs": 800, "vehicle": 2_000})
     return {**base, "live": False, "month": None}
 
-@cached(ttl=21_600)
 def get_crime_stats(council):
-    """Live street-level crime from the Police UK open data API (no key).
+    """Live Police UK counts when available, indicative CRIME table otherwise.
 
-    Counts crimes within roughly a one-mile radius of the council centre for
-    the latest month the police have published. Cached for six hours; the data
-    only updates monthly. Falls back to the indicative CRIME figures when the
-    API is unreachable or the location has no usable coordinates; the ``live``
-    flag on the result says which you got. The whole-UK view always uses the
-    fallback, because a one-mile radius around the UK centroid means nothing.
+    Thin adapter over sources.crime preserving the legacy shape: the category
+    buckets plus the ``live`` and ``month`` keys the UI captions read.
     """
-    coords = COORDS.get(council)
-    if not coords or council == UK_ALL:
-        return _crime_fallback(council)
-    lat, lon = coords
-    try:
-        month = requests.get("https://data.police.uk/api/crime-last-updated", timeout=10).json().get("date")
-        crimes = requests.get(
-            "https://data.police.uk/api/crimes-street/all-crime",
-            params={"lat": lat, "lng": lon, "date": month}, timeout=15,
-        ).json()
-        if not isinstance(crimes, list):
-            return _crime_fallback(council)
-        counts = {"total": len(crimes), "antisocial": 0, "violent": 0,
-                  "burglary": 0, "drugs": 0, "vehicle": 0}
-        for c in crimes:
-            bucket = CRIME_CATEGORY_MAP.get(c.get("category"))
-            if bucket:
-                counts[bucket] += 1
-        return {**counts, "live": True, "month": month}
-    except Exception:
-        return _crime_fallback(council)
+    res = crime_source.fetch(council)
+    if res.live:
+        return {**res.data, "live": True, "month": res.asof}
+    return _crime_fallback(council)
 
 
 # ═══════════════════════════════════════════════════════════

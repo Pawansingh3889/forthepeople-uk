@@ -152,7 +152,7 @@ class TestGetWeatherSunriseRegression:
 
     def test_weather_ok_without_sunrise_field(self) -> None:
         from data import get_weather as gw
-        with mock.patch("data.requests.get", return_value=self._mocked_requests({})):
+        with mock.patch("sources.weather.requests.get", return_value=self._mocked_requests({})):
             result = gw("TestTownNoSunrise")
         assert "error" not in result, f"get_weather raised: {result.get('error')}"
         assert len(result["forecast"]) == 7
@@ -163,7 +163,7 @@ class TestGetWeatherSunriseRegression:
         seven_sunrises = [f"2026-04-{18+i:02d}T05:30:00" for i in range(7)]
         seven_sunsets = [f"2026-04-{18+i:02d}T20:15:00" for i in range(7)]
         with mock.patch(
-            "data.requests.get",
+            "sources.weather.requests.get",
             return_value=self._mocked_requests({"sunrise": seven_sunrises, "sunset": seven_sunsets}),
         ):
             result = gw("TestTownWithSunrise")
@@ -204,7 +204,7 @@ class TestCrimeLive:
         return route
 
     def test_live_path_counts_categories(self) -> None:
-        with mock.patch("data.requests.get", side_effect=self._mocked_requests()):
+        with mock.patch("sources.crime.requests.get", side_effect=self._mocked_requests()):
             result = get_crime_stats("Hull")
         assert result["live"] is True
         assert result["month"] == "2026-05"
@@ -214,14 +214,14 @@ class TestCrimeLive:
         assert result["vehicle"] == 2
 
     def test_network_failure_falls_back(self) -> None:
-        with mock.patch("data.requests.get", side_effect=OSError("no network")):
+        with mock.patch("sources.crime.requests.get", side_effect=OSError("no network")):
             result = get_crime_stats("Hull")
         assert result["live"] is False
         assert result["month"] is None
         assert result["total"] == 32_000  # indicative Hull figure
 
     def test_unknown_council_never_hits_api(self) -> None:
-        with mock.patch("data.requests.get") as mocked:
+        with mock.patch("sources.crime.requests.get") as mocked:
             result = get_crime_stats("Atlantis")
         mocked.assert_not_called()
         assert result["live"] is False
@@ -230,7 +230,7 @@ class TestCrimeLive:
     def test_uk_all_uses_fallback_not_centroid(self) -> None:
         # UK_ALL has COORDS (for weather), but a one-mile street-level
         # crime query at the UK centroid would be meaningless.
-        with mock.patch("data.requests.get") as mocked:
+        with mock.patch("sources.crime.requests.get") as mocked:
             result = get_crime_stats(UK_ALL)
         mocked.assert_not_called()
         assert result["live"] is False
@@ -241,13 +241,13 @@ class TestCrimeLive:
             m = mock.MagicMock()
             m.json.return_value = {"date": "2026-05"} if "crime-last-updated" in url else {"error": "rate limited"}
             return m
-        with mock.patch("data.requests.get", side_effect=route):
+        with mock.patch("sources.crime.requests.get", side_effect=route):
             result = get_crime_stats("Hull")
         assert result["live"] is False
         assert result["total"] == 32_000
 
     def test_live_result_passes_validator(self) -> None:
-        with mock.patch("data.requests.get", side_effect=self._mocked_requests()):
+        with mock.patch("sources.crime.requests.get", side_effect=self._mocked_requests()):
             result = get_crime_stats("Leeds")
         assert validate_crime(result).valid
 
