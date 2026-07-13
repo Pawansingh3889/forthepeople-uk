@@ -14,6 +14,7 @@ from data import (UK_ALL, councils, get_weather, get_council_data, get_mp_data, 
                    get_environment, get_essential_services, get_jobs_data)
 from news import get_combined as get_news
 from postcode import find_council, lookup_postcode
+from registry import REGISTRY
 
 st.set_page_config(
     page_title="ForThePeople UK",
@@ -118,10 +119,11 @@ with st.sidebar.expander("Data provenance"):
         "**Live, fetched at runtime:**\n"
         "- Weather — [Open-Meteo](https://open-meteo.com)\n"
         "- Crime — [Police UK](https://data.police.uk)\n"
+        "- MPs — [UK Parliament](https://members.parliament.uk) Members API\n"
         "- News — gov.uk + BBC feeds\n"
         "- Postcode lookup — [postcodes.io](https://postcodes.io)\n\n"
         "**Indicative sample data** (pending live integration): population, "
-        "finance, housing, education, health, transport, environment, MPs. "
+        "finance, housing, education, health, transport, environment. "
         "Cross-check against the official source linked in each tab."
     )
 st.sidebar.divider()
@@ -138,7 +140,7 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 st.caption(
-    "Live data: Weather, Crime, News and postcode lookup. Other tabs show "
+    "Live data: Weather, Crime, MPs, News and postcode lookup. Other tabs show "
     "indicative sample figures for demonstration — see Data provenance in the "
     "sidebar and the official source linked in each tab."
 )
@@ -156,6 +158,10 @@ tabs = st.tabs([
 with tabs[0]:
     data = get_council_data(council)
 
+    _info = REGISTRY.get(council)
+    if _info and council != UK_ALL:
+        st.caption(f"Local authority: {_info.authority} · ONS code {_info.gss}")
+
     c1, c2, c3, c4, c5 = st.columns(5)
     c1.markdown(f'<div class="stat-card"><div class="stat-value">{data["population"]:,}</div><div class="stat-label">Population</div></div>', unsafe_allow_html=True)
     c2.markdown(f'<div class="stat-card"><div class="stat-value">GBP {data["avg_house_price"]:,}</div><div class="stat-label">Avg House Price</div></div>', unsafe_allow_html=True)
@@ -167,8 +173,12 @@ with tabs[0]:
 
     col1, col2 = st.columns(2)
     with col1:
-        st.markdown('<div class="section-header">Your MP</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Your MPs</div>', unsafe_allow_html=True)
         mp = get_mp_data(council)
+        if mp and mp[0].get("live"):
+            st.caption("Live from the UK Parliament Members API")
+        else:
+            st.caption("Indicative — verify on parliament.uk")
         for m in mp:
             color = {"Labour": "#e11d48", "Conservative": "#2563eb", "Liberal Democrats": "#f59e0b", "Green": "#22c55e", "Independent": "#8b5cf6"}.get(m['party'], "#64748b")
             st.markdown(f"""
@@ -370,13 +380,19 @@ with tabs[10]:
 with tabs[11]:
     st.markdown('<div class="section-header">Election Results</div>', unsafe_allow_html=True)
     mp = get_mp_data(council)
+    if mp and mp[0].get("live"):
+        st.caption("Current members live from the UK Parliament Members API; majorities from each seat's latest election result")
+    else:
+        st.caption("Indicative — verify on parliament.uk")
     for m in mp:
         color = {"Labour": "#e11d48", "Conservative": "#2563eb", "Liberal Democrats": "#f59e0b"}.get(m['party'], "#64748b")
+        majority = m.get('majority')
+        majority_text = f"{majority:,}" if isinstance(majority, int) and majority > 0 else "N/A"
         st.markdown(f"""
         <div class="data-card">
             <h4>{m['constituency']}</h4>
             <p><strong>{m['name']}</strong> — <span style="color: {color};">{m['party']}</span></p>
-            <p>Majority: {m.get('majority', 'N/A'):,}</p>
+            <p>Majority: {majority_text}</p>
         </div>
         """, unsafe_allow_html=True)
     st.markdown("[Full election results](https://www.electoralcommission.org.uk/)")
