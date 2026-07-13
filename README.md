@@ -59,6 +59,8 @@ anywhere else, so here is exactly where each tab gets its numbers:
 | MPs | [UK Parliament](https://members.parliament.uk) Members API | Yes, current members; static fallback |
 | Population | ONS mid-year estimates via [Nomis](https://www.nomisweb.co.uk) | Yes, latest estimate; static fallback |
 | House prices | [HM Land Registry UKHPI](https://landregistry.data.gov.uk/app/ukhpi) | Yes, latest published month; static fallback |
+| Air quality | [Open-Meteo Air Quality](https://open-meteo.com) | Yes, current European AQI |
+| Flood warnings | [Environment Agency](https://check-for-flooding.service.gov.uk) | Yes, active warnings within ~30km |
 | News | gov.uk + BBC News feeds | Yes, cached 24h |
 | Postcode lookup | [postcodes.io](https://postcodes.io) API | Yes |
 | Petitions | [UK Parliament petitions](https://petition.parliament.uk) API | Yes, top open petitions |

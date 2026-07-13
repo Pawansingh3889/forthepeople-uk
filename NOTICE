@@ -36,6 +36,10 @@ content on the dashboard inherits those licences:
   <https://landregistry.data.gov.uk/>
 - ONS via Nomis (population estimates) — Open Government Licence v3.0
   <https://www.nomisweb.co.uk/>
+- Environment Agency real-time flood-monitoring API — Open Government
+  Licence v3.0 <https://environment.data.gov.uk/flood-monitoring/doc/reference>
+- Open-Meteo Air Quality API — Attribution 4.0 International (CC BY 4.0)
+  <https://open-meteo.com/en/license>
 - WhatDoTheyKnow (mySociety) — linked to for FOI requests; no data
   redistributed. <https://www.whatdotheyknow.com/>
 - Nomis (official ONS labour market and population statistics) — Open

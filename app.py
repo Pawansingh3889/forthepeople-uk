@@ -17,7 +17,8 @@ import foi
 from data import (UK_ALL, councils, get_weather, get_council_data, get_mp_data, get_population,
                    get_petitions,
                    get_schemes, get_housing, get_schools, get_crime_stats, get_health_data,
-                   get_transport, get_environment, get_essential_services, get_jobs_data)
+                   get_transport, get_environment, get_essential_services, get_jobs_data,
+                   get_air_quality, get_floods)
 from news import get_combined as get_news
 from postcode import find_council, lookup_postcode
 from registry import REGISTRY
@@ -128,6 +129,8 @@ with st.sidebar.expander("Data provenance"):
         "- MPs — [UK Parliament](https://members.parliament.uk) Members API\n"
         "- Population — ONS mid-year estimate via [Nomis](https://www.nomisweb.co.uk)\n"
         "- House prices — [HM Land Registry UKHPI](https://landregistry.data.gov.uk/app/ukhpi)\n"
+        "- Air quality — [Open-Meteo](https://open-meteo.com) Air Quality API\n"
+        "- Flood warnings — [Environment Agency](https://check-for-flooding.service.gov.uk)\n"
         "- Petitions — [UK Parliament petitions](https://petition.parliament.uk)\n"
         "- News — gov.uk + BBC feeds\n"
         "- Postcode lookup — [postcodes.io](https://postcodes.io)\n\n"
@@ -155,9 +158,9 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 st.caption(
-    "Live data: Weather, Crime, MPs, Population, House prices, Petitions, News and "
-    "postcode lookup. Remaining figures are indicative samples for demonstration — see "
-    "Data provenance in the sidebar and the official source linked in each tab."
+    "Live data: Weather, Crime, MPs, Population, House prices, Air quality, Flood "
+    "warnings, Petitions, News and postcode lookup. Remaining figures are indicative "
+    "samples — see Data provenance in the sidebar and the source linked in each tab."
 )
 
 # ── Dashboard Tabs ──
@@ -339,11 +342,45 @@ with tabs[8]:
 with tabs[9]:
     st.markdown('<div class="section-header">Environment</div>', unsafe_allow_html=True)
     env = get_environment(council)
+    aq = get_air_quality(council)
     e1, e2, e3 = st.columns(3)
-    e1.metric("Recycling Rate", env['recycling_rate'])
-    e2.metric("Air Quality Index", env['aqi'])
+    if aq["live"]:
+        e1.metric("Air Quality (EAQI)", f"{aq['aqi']:.0f}", aq["band"], delta_color="off")
+    else:
+        e1.metric("Air Quality Index", env['aqi'])
+    e2.metric("Recycling Rate", env['recycling_rate'])
     e3.metric("Green Spaces", env['green_spaces'])
-    st.markdown("[Check air quality](https://uk-air.defra.gov.uk/)")
+    if aq["live"]:
+        st.caption(
+            f"Live European Air Quality Index from Open-Meteo · PM2.5 {aq['pm2_5']} · "
+            f"PM10 {aq['pm10']} · NO2 {aq['no2']} µg/m³. Recycling rate and green spaces "
+            "are indicative samples."
+        )
+    else:
+        st.caption("Air quality could not be fetched live; the figures shown are indicative samples.")
+    st.markdown("[Check air quality (DEFRA)](https://uk-air.defra.gov.uk/)")
+
+    # Flood warnings — live from the Environment Agency
+    st.markdown('<div class="section-header">Flood warnings</div>', unsafe_allow_html=True)
+    floods = get_floods(council)
+    if not floods["live"]:
+        st.caption("Could not reach the Environment Agency flood service. Check gov.uk directly.")
+    else:
+        active = [w for w in (floods["warnings"] or []) if isinstance(w["level"], int) and w["level"] <= 3]
+        if not active:
+            st.success(f"No active flood warnings near {council}.")
+        else:
+            for w in active:
+                color = {1: "#ef4444", 2: "#f97316", 3: "#3b82f6"}.get(w["level"], "#64748b")
+                river = f" — {w['river_or_sea']}" if w["river_or_sea"] else ""
+                st.markdown(f"""
+                <div class="alert-card" style="border-left-color: {color};">
+                    <p style="color: {color}; font-weight: 700; margin: 0;">{w['severity']}</p>
+                    <p style="margin: 4px 0 0 0;">{w['description']}{river}</p>
+                </div>
+                """, unsafe_allow_html=True)
+        st.caption("Live from the Environment Agency, within about 30km of the council centre.")
+    st.markdown("[Check for flooding (gov.uk)](https://check-for-flooding.service.gov.uk)")
 
 # ── TAB: Schemes ──
 with tabs[10]:
