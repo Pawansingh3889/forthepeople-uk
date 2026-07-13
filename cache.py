@@ -30,8 +30,13 @@ def cached(ttl: int = CACHE_TTL) -> Callable:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             if _cache is None:
                 return fn(*args, **kwargs)
+            # Key on module + qualname, not the bare name: every module in
+            # sources/ exposes a function called ``fetch``, and keying on the
+            # name alone made them share cache entries, so whichever source
+            # fetched a council first fed its payload to all the others.
             key = hashlib.md5(
-                json.dumps({"fn": fn.__name__, "args": args, "kwargs": sorted(kwargs.items())}).encode()
+                json.dumps({"fn": f"{fn.__module__}.{fn.__qualname__}", "args": args,
+                            "kwargs": sorted(kwargs.items())}).encode()
             ).hexdigest()
             result = _cache.get(key)
             if result is not None:
