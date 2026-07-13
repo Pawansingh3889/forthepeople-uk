@@ -1,7 +1,9 @@
 """ForThePeople UK — Citizen Transparency Platform
 
-Free, real-time council-level government data dashboards for the UK.
-Independent. No login. No paywall. Open data.
+Free UK council dashboards. Weather, crime, news and postcode lookup are live
+open-data sources (Open-Meteo, Police UK, gov.uk/BBC feeds, postcodes.io);
+other figures are indicative sample data for demonstration.
+Independent. No login. No paywall.
 
 Usage:
     streamlit run app.py
@@ -111,20 +113,35 @@ council = st.sidebar.selectbox(
 )
 
 st.sidebar.divider()
-st.sidebar.markdown("**Data Sources**")
-st.sidebar.caption("ONS | gov.uk | NHS Digital | DfE | Police UK | Met Office | Open Data")
+with st.sidebar.expander("Data provenance"):
+    st.markdown(
+        "**Live, fetched at runtime:**\n"
+        "- Weather — [Open-Meteo](https://open-meteo.com)\n"
+        "- Crime — [Police UK](https://data.police.uk)\n"
+        "- News — gov.uk + BBC feeds\n"
+        "- Postcode lookup — [postcodes.io](https://postcodes.io)\n\n"
+        "**Indicative sample data** (pending live integration): population, "
+        "finance, housing, education, health, transport, environment, MPs. "
+        "Cross-check against the official source linked in each tab."
+    )
 st.sidebar.divider()
 st.sidebar.markdown("**About**")
-st.sidebar.caption("Independent platform. Not affiliated with government. All data from public open data sources.")
+st.sidebar.caption("Independent platform. Not affiliated with government.")
 
 # ── Header ──
 st.markdown(f"""
 <div class="main-header">
     <h1>ForThePeople UK</h1>
-    <p>Free, real-time council-level government data for <strong>{council}</strong></p>
+    <p>Free, open UK council data for <strong>{council}</strong></p>
     <p style="font-size: 0.8rem; color: #475569;">Independent. No login. No paywall. Open data.</p>
 </div>
 """, unsafe_allow_html=True)
+
+st.caption(
+    "Live data: Weather, Crime, News and postcode lookup. Other tabs show "
+    "indicative sample figures for demonstration — see Data provenance in the "
+    "sidebar and the official source linked in each tab."
+)
 
 # ── Dashboard Tabs ──
 # "News" appended at the end so indices of existing tabs (Overview=0,
@@ -257,8 +274,14 @@ with tabs[6]:
 with tabs[7]:
     st.markdown('<div class="section-header">Crime Statistics</div>', unsafe_allow_html=True)
     crime = get_crime_stats(council)
+    if crime.get("live"):
+        st.caption(f"Live from Police UK · {crime['month']} · street-level crime within about a mile of the council centre")
+        total_label = "Crimes (latest month)"
+    else:
+        st.caption("Indicative sample figures — live Police UK data is not available for this selection")
+        total_label = "Total Crimes (indicative)"
     cr1, cr2, cr3, cr4 = st.columns(4)
-    cr1.metric("Total Crimes (12mo)", f"{crime['total']:,}")
+    cr1.metric(total_label, f"{crime['total']:,}")
     cr2.metric("Anti-Social", f"{crime['antisocial']:,}")
     cr3.metric("Violent Crime", f"{crime['violent']:,}")
     cr4.metric("Burglary", f"{crime['burglary']:,}")
