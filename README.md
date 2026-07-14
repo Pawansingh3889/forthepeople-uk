@@ -129,6 +129,15 @@ The app never needs a key to run. The Ask tab picks its mode automatically:
 Questions and the selected council's dashboard data are sent to Anthropic's
 API only in modes 1 and 2. Nothing is logged by the app.
 
+The guardrails are the point, not caution for its own sake. New York City
+shipped an official AI chatbot for residents in 2023 without them;
+[The Markup caught it](https://themarkup.org/news/2024/03/29/nycs-ai-chatbot-tells-businesses-to-break-the-law)
+telling businesses they could take workers' tips and landlords that they
+could turn away housing-voucher tenants, and the city is now scrapping it.
+An ungrounded model asked about the law will confidently make law up. This
+tab is built on the opposite assumption: answer only from labelled data,
+name the label, and hand anything personal to a qualified human.
+
 ## 50+ Government Schemes
 
 Income Support | Disability | Housing | Family | Pension | Energy | Tax | Transport | Education | Immigration | Business | Legal
