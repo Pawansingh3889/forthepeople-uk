@@ -14,6 +14,7 @@ from urllib.parse import quote
 import streamlit as st
 
 import ask
+import charts
 import foi
 from data import (UK_ALL, councils, get_weather, get_council_data, get_mp_data, get_population,
                    get_petitions,
@@ -32,24 +33,59 @@ st.set_page_config(
 )
 
 # ── Styles ──
+# Type: Barlow Condensed for display (hero, section headers, tabs), Source
+# Sans 3 for everything else. Accent #3987e5 and aqua #199e70 are the two
+# validated chart slots, reused as the app accents so charts and chrome
+# agree. Cards use hairline borders instead of gradients.
 st.markdown("""
 <style>
-    .stApp { background-color: #0a0f1a; }
-    .main-header { text-align: center; padding: 20px 0; }
-    .main-header h1 { color: #ffffff; font-size: 2.5rem; font-weight: 800; }
-    .main-header p { color: #64748b; font-size: 1rem; }
-    .stat-card { background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #1e3a5f; border-radius: 16px; padding: 24px; text-align: center; }
-    .stat-value { font-size: 2rem; font-weight: 800; color: #3b82f6; }
-    .stat-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
-    .data-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-bottom: 12px; }
-    .data-card h4 { color: #60a5fa; margin: 0 0 8px 0; }
+    @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600;700&display=swap');
+
+    .stApp { background-color: #0a0f1a; font-family: 'Source Sans 3', system-ui, sans-serif; }
+
+    /* Hero */
+    .hero { padding: 26px 0 6px 0; }
+    .hero-eyebrow { font-family: 'Barlow Condensed', sans-serif; font-size: 0.95rem; letter-spacing: 2.5px; text-transform: uppercase; color: #6da7ec; margin-bottom: 2px; }
+    .hero h1 { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #f8fafc; font-size: clamp(2.4rem, 5.5vw, 3.6rem); line-height: 1.02; margin: 0 0 4px 0; }
+    .hero-meta { color: #64748b; font-size: 0.85rem; margin-bottom: 18px; }
+    .hero-sentence { color: #cbd5e1; font-size: 1.05rem; max-width: 62rem; line-height: 1.55; margin: 14px 0 4px 0; }
+
+    /* Stat tiles */
+    .tile-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 6px; }
+    .tile { flex: 1 1 150px; min-width: 150px; background: #111a2e; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 16px 18px 14px 18px; }
+    .tile-value { font-size: 1.85rem; font-weight: 700; color: #f8fafc; line-height: 1.1; }
+    .tile-label { font-size: 0.68rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.4px; margin-top: 6px; }
+    .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 0.64rem; letter-spacing: 1px; text-transform: uppercase; margin-top: 8px; }
+    .chip .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+    .chip-live { color: #0ca30c; } .chip-live .dot { background: #0ca30c; }
+    .chip-sample { color: #64748b; } .chip-sample .dot { background: #64748b; }
+
+    /* Section headers */
+    .section-header { font-family: 'Barlow Condensed', sans-serif; color: #f8fafc; font-size: 1.45rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; padding-bottom: 8px; margin: 24px 0 14px 0; border-bottom: 1px solid rgba(255,255,255,0.08); position: relative; }
+    .section-header::after { content: ""; position: absolute; left: 0; bottom: -1px; width: 56px; height: 2px; background: #3987e5; }
+
+    /* Cards */
+    .data-card { background: #111a2e; border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 18px 20px; margin-bottom: 12px; }
+    .data-card h4 { color: #6da7ec; margin: 0 0 8px 0; }
     .data-card p { color: #cbd5e1; margin: 0; font-size: 0.9rem; }
-    .scheme-card { background: #1e293b; border-left: 4px solid #22c55e; border-radius: 0 12px 12px 0; padding: 16px; margin-bottom: 10px; }
-    .alert-card { background: #1e293b; border-left: 4px solid #ef4444; border-radius: 0 12px 12px 0; padding: 16px; margin-bottom: 10px; }
-    .section-header { color: #f8fafc; font-size: 1.3rem; font-weight: 700; border-bottom: 2px solid #1e3a5f; padding-bottom: 8px; margin: 24px 0 16px 0; }
-    a { color: #60a5fa !important; text-decoration: none !important; }
-    a:hover { color: #93c5fd !important; }
-    .footer { text-align: center; color: #475569; font-size: 0.75rem; padding: 40px 0 20px 0; border-top: 1px solid #1e293b; margin-top: 40px; }
+    .scheme-card { background: #111a2e; border: 1px solid rgba(255,255,255,0.07); border-left: 3px solid #199e70; border-radius: 0 10px 10px 0; padding: 14px 16px; margin-bottom: 10px; }
+    .alert-card { background: #111a2e; border: 1px solid rgba(255,255,255,0.07); border-left: 3px solid #e66767; border-radius: 0 10px 10px 0; padding: 14px 16px; margin-bottom: 10px; }
+
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] { gap: 2px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .stTabs [data-baseweb="tab"] { padding: 6px 10px; }
+    .stTabs [data-baseweb="tab"] p { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 1.2px; font-size: 0.95rem !important; }
+    .stTabs [aria-selected="true"] p { color: #6da7ec !important; }
+    .stTabs [data-baseweb="tab-highlight"] { background-color: #3987e5 !important; }
+
+    /* Petition meter */
+    .meter { position: relative; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; margin: 6px 0 16px 0; overflow: visible; }
+    .meter-fill { height: 100%; background: #3987e5; border-radius: 3px; }
+    .meter-tick { position: absolute; top: -3px; width: 2px; height: 12px; background: #94a3b8; }
+
+    a { color: #6da7ec !important; text-decoration: none !important; }
+    a:hover { color: #9ec5f4 !important; }
+    .footer { text-align: center; color: #475569; font-size: 0.75rem; padding: 40px 0 20px 0; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 40px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -149,12 +185,61 @@ st.sidebar.divider()
 st.sidebar.markdown("**About**")
 st.sidebar.caption("Independent platform. Not affiliated with government.")
 
-# ── Header ──
+# ── Hero ──
+def _tile(value, label, live=None):
+    chip = ""
+    if live is True:
+        chip = '<div class="chip chip-live"><span class="dot"></span>live</div>'
+    elif live is False:
+        chip = '<div class="chip chip-sample"><span class="dot"></span>sample</div>'
+    return f'<div class="tile"><div class="tile-value">{value}</div><div class="tile-label">{label}</div>{chip}</div>'
+
+
+def _hero_sentence(place, pop, housing):
+    if pop["live"]:
+        pop_part = f"home to <strong>{pop['population']:,}</strong> people on the ONS mid-{pop['year']} estimate"
+    else:
+        pop_part = f"home to around {pop['population']:,} people (indicative sample)"
+    if housing.get("live"):
+        house_part = f"an average home costs <strong>£{housing['avg_price']:,}</strong> ({housing['month']}, HM Land Registry)"
+        vs = housing.get("vs_uk")
+        if isinstance(vs, int) and vs != 0:
+            house_part += f", £{abs(vs):,} {'above' if vs > 0 else 'below'} the UK average"
+    else:
+        house_part = f"an average home costs around £{housing['avg_price']:,} (indicative sample)"
+    subject = "The United Kingdom is" if place == UK_ALL else f"{place} is"
+    return f"{subject} {pop_part}, and {house_part}."
+
+
+_hero_data = get_council_data(council)
+_hero_pop = get_population(council)
+_hero_housing = get_housing(council)
+_hero_info = REGISTRY.get(council)
+
+_tax = _hero_data.get("council_tax", "N/A")
+_tax_display = f"£{_tax}" if _tax not in ("N/A", "Varies") else _tax
+_tiles = "".join([
+    _tile(f"{_hero_pop['population']:,}",
+          f"Population · ONS {_hero_pop['year']}" if _hero_pop["live"] else "Population",
+          _hero_pop["live"]),
+    _tile(f"£{_hero_housing['avg_price']:,}",
+          f"Avg house price · {_hero_housing['month']}" if _hero_housing.get("live") else "Avg house price",
+          bool(_hero_housing.get("live"))),
+    _tile(_hero_data["employment_rate"], "Employment rate", False),
+    _tile(f"£{_hero_data['median_salary']:,}", "Median salary", False),
+    _tile(_tax_display, "Council tax · Band D", False),
+])
+_meta = "Independent · No login · No paywall · Open data"
+if _hero_info and council != UK_ALL:
+    _meta = f"{_hero_info.authority} · {_hero_info.region} · ONS {_hero_info.gss} · {_meta}"
+
 st.markdown(f"""
-<div class="main-header">
-    <h1>ForThePeople UK</h1>
-    <p>Free, open UK council data for <strong>{council}</strong></p>
-    <p style="font-size: 0.8rem; color: #475569;">Independent. No login. No paywall. Open data.</p>
+<div class="hero">
+    <div class="hero-eyebrow">ForThePeople UK · Citizen Transparency</div>
+    <h1>{council}</h1>
+    <div class="hero-meta">{_meta}</div>
+    <div class="tile-row">{_tiles}</div>
+    <p class="hero-sentence">{_hero_sentence(council, _hero_pop, _hero_housing)}</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -181,23 +266,6 @@ tabs = st.tabs([
 # ── TAB: Overview ──
 with tabs[0]:
     data = get_council_data(council)
-
-    _info = REGISTRY.get(council)
-    if _info and council != UK_ALL:
-        st.caption(f"Local authority: {_info.authority} · ONS code {_info.gss}")
-
-    _pop = get_population(council)
-    _housing = get_housing(council)
-    _pop_label = f"Population ({_pop['year']}, live)" if _pop["live"] else "Population"
-    _price_label = f"Avg House Price ({_housing['month']}, live)" if _housing.get("live") else "Avg House Price"
-    c1, c2, c3, c4, c5 = st.columns(5)
-    c1.markdown(f'<div class="stat-card"><div class="stat-value">{_pop["population"]:,}</div><div class="stat-label">{_pop_label}</div></div>', unsafe_allow_html=True)
-    c2.markdown(f'<div class="stat-card"><div class="stat-value">GBP {_housing["avg_price"]:,}</div><div class="stat-label">{_price_label}</div></div>', unsafe_allow_html=True)
-    c3.markdown(f'<div class="stat-card"><div class="stat-value">{data["employment_rate"]}</div><div class="stat-label">Employment Rate</div></div>', unsafe_allow_html=True)
-    c4.markdown(f'<div class="stat-card"><div class="stat-value">GBP {data["median_salary"]:,}</div><div class="stat-label">Median Salary</div></div>', unsafe_allow_html=True)
-    c5.markdown(f'<div class="stat-card"><div class="stat-value">{data["council_tax"]}</div><div class="stat-label">Council Tax (Band D)</div></div>', unsafe_allow_html=True)
-
-    st.divider()
 
     col1, col2 = st.columns(2)
     with col1:
@@ -239,11 +307,12 @@ with tabs[1]:
         wc3.metric("Humidity", f"{w['humidity']}%")
         wc4.metric("Wind", f"{w['wind']} km/h")
 
-        st.markdown("**7-Day Forecast**")
-        fcols = st.columns(7)
-        for i, f in enumerate(w.get("forecast", [])):
-            with fcols[i]:
-                st.metric(f["date"][5:], f"{f['max']}C / {f['min']}C", f"{f['rain']}mm")
+        forecast = w.get("forecast", [])
+        if forecast:
+            st.markdown('<div class="section-header">7-Day Temperature Range</div>', unsafe_allow_html=True)
+            st.altair_chart(charts.forecast_chart(forecast), use_container_width=True)
+            st.markdown('<div class="section-header">Daily Rain</div>', unsafe_allow_html=True)
+            st.altair_chart(charts.rain_chart(forecast), use_container_width=True)
     else:
         st.error(w['error'])
 
@@ -272,9 +341,10 @@ with tabs[3]:
     st.metric("Council Tax Band D", f"GBP {data.get('council_tax', 'N/A')}")
 
     if data.get("spending"):
-        st.markdown("**Spending Breakdown**")
-        for area, pct in data["spending"].items():
-            st.progress(int(pct.replace('%', '')) / 100, text=f"{area.replace('_', ' ').title()}: {pct}")
+        st.markdown('<div class="section-header">Spending Breakdown</div>', unsafe_allow_html=True)
+        _spend = [(area.replace("_", " ").title(), float(pct.replace("%", "")))
+                  for area, pct in data["spending"].items()]
+        st.altair_chart(charts.category_bars(_spend, "% of budget", ".0f"), use_container_width=True)
 
     st.markdown("[View full accounts on gov.uk](https://www.gov.uk/government/collections/local-authority-revenue-expenditure-and-financing)")
 
@@ -330,11 +400,14 @@ with tabs[7]:
     else:
         st.caption("Indicative sample figures — live Police UK data is not available for this selection")
         total_label = "Total Crimes (indicative)"
-    cr1, cr2, cr3, cr4 = st.columns(4)
-    cr1.metric(total_label, f"{crime['total']:,}")
-    cr2.metric("Anti-Social", f"{crime['antisocial']:,}")
-    cr3.metric("Violent Crime", f"{crime['violent']:,}")
-    cr4.metric("Burglary", f"{crime['burglary']:,}")
+    st.metric(total_label, f"{crime['total']:,}")
+    st.altair_chart(charts.category_bars([
+        ("Anti-social behaviour", crime["antisocial"]),
+        ("Violent crime", crime["violent"]),
+        ("Burglary", crime["burglary"]),
+        ("Drugs", crime["drugs"]),
+        ("Vehicle crime", crime["vehicle"]),
+    ], "offences"), use_container_width=True)
     st.markdown("[View full data on Police UK](https://www.police.uk)")
 
 # ── TAB: Transport ──
@@ -638,7 +711,12 @@ with tabs[15]:
                 <p style="margin:6px 0 0 0;"><span style="color:#22c55e; font-weight:700;">{p['signatures']:,}</span> signatures &nbsp;·&nbsp; {status}</p>
             </div>
             """, unsafe_allow_html=True)
-            st.progress(min(p["signatures"] / 100_000, 1.0))
+            _pct = min(p["signatures"] / 100_000, 1.0) * 100
+            st.markdown(
+                f'<div class="meter"><div class="meter-fill" style="width:{_pct:.1f}%"></div>'
+                f'<div class="meter-tick" style="left:10%" title="10,000 — response threshold"></div></div>',
+                unsafe_allow_html=True,
+            )
         st.markdown("[Start or search petitions on petition.parliament.uk](https://petition.parliament.uk)")
     else:
         st.info("The petitions service is unavailable right now. You can browse petitions directly at [petition.parliament.uk](https://petition.parliament.uk).")
