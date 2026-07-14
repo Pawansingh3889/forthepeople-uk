@@ -21,8 +21,13 @@ URL = "https://landregistry.data.gov.uk/app/ukhpi"
 BASE = "https://landregistry.data.gov.uk/data/ukhpi/region"
 
 UK_SLUG = "united-kingdom"
+# UKHPI slugs follow the ONS area name, which is not always the council's
+# branded name: the ONS area is plain "York", the council calls itself
+# "City of York". Verified against the live API.
 SLUG_OVERRIDES = {
     "Westminster": "city-of-westminster",
+    "York": "york",
+    "Lincoln": "lincoln",
 }
 
 
@@ -55,6 +60,8 @@ def _region_month(slug: str, month: str) -> dict | None:
     if r.status_code != 200:
         return None
     topic = (r.json().get("result") or {}).get("primaryTopic") or {}
+    if not isinstance(topic, dict):  # unknown region: primaryTopic is "elda:missingEndpoint"
+        return None
     price = topic.get("averagePrice")
     if not isinstance(price, (int, float)):
         return None

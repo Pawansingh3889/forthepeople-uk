@@ -35,6 +35,16 @@ class TestSlugDerivation:
         entry.name = "Westminster"
         assert house_prices._slug(entry) == "city-of-westminster"
 
+    def test_ons_name_beats_council_branding(self) -> None:
+        # UKHPI slugs follow the ONS area name ("York"), not the council's
+        # branded name ("City of York"). Both verified against the live API.
+        entry = mock.MagicMock(authority="City of York")
+        entry.name = "York"
+        assert house_prices._slug(entry) == "york"
+        entry = mock.MagicMock(authority="City of Lincoln")
+        entry.name = "Lincoln"
+        assert house_prices._slug(entry) == "lincoln"
+
 
 class TestHousePricesFetch:
     def test_live_path_includes_uk_comparison(self) -> None:
@@ -80,6 +90,16 @@ class TestHousePricesFetch:
             result = house_prices.fetch("Hull")
         assert result.live is True
         assert result.data["month"] == "2026-02"
+
+    def test_unknown_region_missing_endpoint_is_unavailable(self) -> None:
+        # UKHPI answers 200 with primaryTopic "elda:missingEndpoint" for a
+        # slug it does not know; that must read as unavailable, not crash.
+        m = mock.MagicMock()
+        m.status_code = 200
+        m.json.return_value = {"result": {"primaryTopic": "elda:missingEndpoint"}}
+        with mock.patch("sources.house_prices.requests.get", return_value=m):
+            result = house_prices.fetch("Leeds")
+        assert result.live is False
 
     def test_all_months_missing_is_unavailable(self) -> None:
         with mock.patch("sources.house_prices.requests.get", return_value=_resp(status=404)):
