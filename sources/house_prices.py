@@ -68,7 +68,7 @@ def _region_month(slug: str, month: str) -> dict | None:
     }
 
 
-@cached(ttl=86_400)
+@cached(ttl=86_400, cache_if=lambda r: r.live)
 def fetch(council: str) -> SourceResult:
     entry = REGISTRY.get(council)
     if not entry:

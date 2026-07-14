@@ -21,7 +21,7 @@ def _unavailable() -> SourceResult:
     return SourceResult(data=None, live=False, asof=None, source=SOURCE, url=URL)
 
 
-@cached(ttl=3600)
+@cached(ttl=3600, cache_if=lambda r: r.live)
 def fetch(limit: int = 15) -> SourceResult:
     """Top `limit` open petitions, most-signed first."""
     try:

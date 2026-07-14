@@ -31,6 +31,25 @@ def _crime_route(url, *args, **kwargs):
     return m
 
 
+class TestUnavailableResultsAreNotCached:
+    def test_fallback_is_retried_next_call(self) -> None:
+        # First call fails (network down), second succeeds. Without cache_if
+        # the failure would be pinned for the whole TTL.
+        with mock.patch("sources.population.requests.get", side_effect=OSError("down")):
+            first = population.fetch("Hull")
+        assert first.live is False
+        with mock.patch("sources.population.requests.get", return_value=_population_resp()):
+            second = population.fetch("Hull")
+        assert second.live is True
+        assert second.data["population"] == 267_000
+
+    def test_live_result_is_cached(self) -> None:
+        with mock.patch("sources.population.requests.get", return_value=_population_resp()) as m:
+            population.fetch("Hull")
+            population.fetch("Hull")
+        assert m.call_count == 1  # second call served from cache
+
+
 class TestSameNamedFetchersDoNotShareCacheEntries:
     def test_population_then_crime_for_same_council(self) -> None:
         with mock.patch("sources.population.requests.get", return_value=_population_resp()):

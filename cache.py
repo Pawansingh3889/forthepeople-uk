@@ -23,8 +23,13 @@ except ImportError:
     _cache = None
 
 
-def cached(ttl: int = CACHE_TTL) -> Callable:
-    """Cache function results to disk. Falls back to no-cache if diskcache unavailable."""
+def cached(ttl: int = CACHE_TTL, cache_if: Callable[[Any], bool] | None = None) -> Callable:
+    """Cache function results to disk. Falls back to no-cache if diskcache unavailable.
+
+    ``cache_if`` decides whether a freshly computed result is worth keeping:
+    sources pass ``lambda r: r.live`` so a transient API failure is retried on
+    the next call instead of pinning the fallback for the whole TTL.
+    """
     def decorator(fn: Callable) -> Callable:
         @wraps(fn)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -42,7 +47,8 @@ def cached(ttl: int = CACHE_TTL) -> Callable:
             if result is not None:
                 return result
             result = fn(*args, **kwargs)
-            _cache.set(key, result, expire=ttl)
+            if cache_if is None or cache_if(result):
+                _cache.set(key, result, expire=ttl)
             return result
         return wrapper
     return decorator

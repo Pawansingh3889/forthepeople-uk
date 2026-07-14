@@ -33,7 +33,7 @@ def _majority(member_id: int) -> int | None:
         return None
 
 
-@cached(ttl=86_400)
+@cached(ttl=86_400, cache_if=lambda r: r.live)
 def fetch(council: str) -> SourceResult:
     """Current MPs for the constituencies matching a council.
 

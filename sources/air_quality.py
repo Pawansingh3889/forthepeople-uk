@@ -36,7 +36,7 @@ def _unavailable() -> SourceResult:
     return SourceResult(data=None, live=False, asof=None, source=SOURCE, url=URL)
 
 
-@cached(ttl=1800)
+@cached(ttl=1800, cache_if=lambda r: r.live)
 def fetch(council: str) -> SourceResult:
     """Current EAQI + pollutants. The whole-UK centroid is skipped as a single
     point that would not represent the country."""

@@ -21,7 +21,7 @@ WEATHER_CODES = {
 }
 
 
-@cached(ttl=600)
+@cached(ttl=600, cache_if=lambda r: r.live)
 def fetch(location: str) -> SourceResult:
     lat, lon = COORDS.get(location, (53.96, -1.08))
     try:

@@ -29,7 +29,7 @@ def _unavailable() -> SourceResult:
     return SourceResult(data=None, live=False, asof=None, source=SOURCE, url=URL)
 
 
-@cached(ttl=21_600)
+@cached(ttl=21_600, cache_if=lambda r: r.live)
 def fetch(council: str) -> SourceResult:
     """Counts by category for the latest published month.
 

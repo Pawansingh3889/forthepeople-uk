@@ -30,7 +30,7 @@ def _unavailable() -> SourceResult:
     return SourceResult(data=None, live=False, asof=None, source=SOURCE, url=URL)
 
 
-@cached(ttl=86_400)
+@cached(ttl=86_400, cache_if=lambda r: r.live)
 def fetch(council: str) -> SourceResult:
     """Latest mid-year total population for the council's authority.
 
