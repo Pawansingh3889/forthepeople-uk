@@ -40,8 +40,6 @@ class Council:
 
 
 _ENTRIES = [
-    Council(UK_ALL, "United Kingdom (national)", 54.0, -2.0, "K02000001", "United Kingdom"),
-
     # Yorkshire and the Humber
     Council("York", "Yorkshire and the Humber", 53.96, -1.08, "E06000014", "City of York"),
     Council("Leeds", "Yorkshire and the Humber", 53.80, -1.55, "E08000035", "Leeds"),
@@ -119,6 +117,10 @@ _ENTRIES = [
     Council("Exeter", "South West", 50.72, -3.53, "E07000041", "Exeter"),
     Council("Plymouth", "South West", 50.37, -4.14, "E06000026", "Plymouth"),
     Council("Bournemouth", "South West", 50.72, -1.88, "E06000058", "Bournemouth, Christchurch and Poole"),
+
+    # Whole-UK pseudo-region last, so a real council (with the most live
+    # data) is the landing view; the sidebar button still jumps here.
+    Council(UK_ALL, "United Kingdom (national)", 54.0, -2.0, "K02000001", "United Kingdom"),
 ]
 
 REGISTRY: dict[str, Council] = {c.name: c for c in _ENTRIES}
